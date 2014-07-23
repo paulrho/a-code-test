@@ -6,7 +6,7 @@ class mpars {
     test();
   }
 
-  static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6;
+  static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7;
   static final int O_LT=0, O_PLUS=1, O_MULT=2;
   static final int F_cos=0, F_sin=1;
 
@@ -55,25 +55,25 @@ class mpars {
     prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
     prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=numobj; pp++;
     prog[pp]=T_PRF; progparam_mem[pp]=O_LT; pp++;
-    prog[pp]=T_POP; pp++;
+    //prog[pp]=T_POP; pp++;
     // jmp out
-    prog[pp]=T_JMP; progparam_mem[pp]=pp+6; pp++;
+    prog[pp]=T_BEQ; progparam_mem[pp]=pp+6; pp++;
     // j++
     prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
     prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=1; pp++;
     prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
     prog[pp]=T_STO; progparam_mem[pp]=mem_j; pp++;
     // jmp to top j
-    prog[pp]=T_JMP; progparam_mem[pp]=1; pp++;
+    prog[pp]=T_JMP; progparam_mem[pp]=2; pp++;
     // out:
-    prog[pp]=T_END; progparam_mem[pp]=1; pp++;
+    prog[pp]=T_END; pp++;
 
     for (memi[mem_i]=0; memi[mem_i]<numobj; ++memi[mem_i]) {
       memi[mem_x+memi[mem_i]]=57+memi[mem_i];
       memi[mem_y+memi[mem_i]]=57-memi[mem_i];
     }
-    for (memi[mem_iter]=0; memi[mem_iter]<100; ++memi[mem_iter]) {
-      for (memi[mem_i]=0; memi[mem_i]<1000; ++memi[mem_i]) {
+    for (memi[mem_iter]=0; memi[mem_iter]<2 /*100*/; ++memi[mem_iter]) {
+      for (memi[mem_i]=0; memi[mem_i]<2 /*1000*/ ; ++memi[mem_i]) {
         mem[mem_v]=mem[mem_v]+Math.sin(memi[mem_i]);
         //for (memi[mem_j]=0; memi[mem_j]<numobj; ++memi[mem_j]) {
           //mem[mem_x+memi[mem_j]]=mem[mem_x+memi[mem_j]]+mem[mem_v]*Math.cos(memi[mem_j]*1.0);
@@ -87,11 +87,13 @@ class mpars {
     }
     System.out.printf("%f\n",mem[mem_v]);
 
-
+   for (memi[mem_j]=0; memi[mem_j]<numobj; ++memi[mem_j]) {
+      System.out.printf("  %d]%f\n",memi[mem_j],mem[mem_x+memi[mem_j]]);
+   }
     
   }
 
-  int verbose=0;
+  int verbose=1;
 
   int run_prog(int pp) {
     int instr;
@@ -131,22 +133,50 @@ class mpars {
           if (verbose>0) { System.out.printf("  Performing op %d\n",progparam_mem[pp]); }
           switch (progparam_mem[pp]) {
             case O_LT:
+              if (verbose>0) {
+                System.out.printf("%f < %f\n",stk[sp-2],stk[sp-1]);
+              }
               stk[sp-2]=(stk[sp-2]<stk[sp-1])?-1:0;
+              if (verbose>0) {
+                System.out.printf(" = %f\n",stk[sp-2]);
+              }
               break;
             case O_PLUS:
+              if (verbose>0) {
+                System.out.printf(" %f + %f\n",stk[sp-2],stk[sp-1]);
+              }
               stk[sp-2]=stk[sp-2]+stk[sp-1];
+              if (verbose>0) {
+                System.out.printf(" = %f\n",stk[sp-2]);
+              }
               break;
             case O_MULT:
+              if (verbose>0) {
+                System.out.printf(" %f * %f\n",stk[sp-2],stk[sp-1]);
+              }
               stk[sp-2]=stk[sp-2]*stk[sp-1];
+              if (verbose>0) {
+                System.out.printf(" = %f\n",stk[sp-2]);
+              }
               break;
           }
           sp--;
           if (verbose>0) System.out.printf("  sp=%d\n",sp);
           break;
+        case T_BEQ:
+          sp--;
+          if (stk[sp]==0) {
+            pp=progparam_mem[pp];
+            continue mainloop;
+          }
+          break;
         case T_JMP:
           pp=progparam_mem[pp];
           continue mainloop;
         case T_STO:
+          if (verbose>0) {
+            System.out.printf("Storing %f\n",stk[sp-1]);
+          }
           mem[progparam_mem[pp]]=stk[sp-1];
           sp--;
           break;
