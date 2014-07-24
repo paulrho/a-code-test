@@ -7,7 +7,8 @@ class mpars {
   }
 
   static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7;
-  static final int TM_MEM=256, TM_MEMIND=512, TM_INT=1024;
+  //static final int TM_MEM=256, TM_MEMIND=512, TM_INT=1024, TM_IMM_I=2048, TM_IMM_D=4096;
+  static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5;
   static final int O_LT=0, O_PLUS=1, O_MULT=2;
   static final int F_cos=0, F_sin=1;
 
@@ -39,7 +40,7 @@ class mpars {
 		// 33 seconds on work machine seconds 
 
           //for (memi[mem_i]=0; memi[mem_i]</*2*/ 1000 ; ++memi[mem_i]) {
-          prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=0; pp++;
+          prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=0; pp++;
           prog[pp]=T_STO; progparam_mem[pp]=mem_i; pp++;
             // i loop
 		        pploop2=pp;
@@ -52,7 +53,7 @@ class mpars {
             prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
             prog[pp]=T_STO; progparam_mem[pp]=mem_v; pp++;
         
-            prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=0; pp++;
+            prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=0; pp++;
             prog[pp]=T_STO; progparam_mem[pp]=mem_j; pp++;
               // j loop
 		          pploop1=pp;
@@ -90,13 +91,13 @@ class mpars {
                
             // j<numobj
             prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
-            prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=numobj-1; pp++;
+            prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=numobj-1; pp++;
             prog[pp]=T_PRF; progparam_mem[pp]=O_LT; pp++;
             // jmp out
             prog[pp]=T_BEQ; progparam_mem[pp]=pp+6; pp++;
             // j++
             prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
-            prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=1; pp++;
+            prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=1; pp++;
             prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
             prog[pp]=T_STO; progparam_mem[pp]=mem_j; pp++;
             // jmp to top j
@@ -104,13 +105,13 @@ class mpars {
             // out:
           // i<numobj
           prog[pp]=T_PSH; progparam_mem[pp]=mem_i; pp++;
-          prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=numobj-1; pp++;
+          prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=numobj-1; pp++;
           prog[pp]=T_PRF; progparam_mem[pp]=O_LT; pp++;
           // jmp out
           prog[pp]=T_BEQ; progparam_mem[pp]=pp+6; pp++;
           // i++
           prog[pp]=T_PSH; progparam_mem[pp]=mem_i; pp++;
-          prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=1; pp++;
+          prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=1; pp++;
           prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
           prog[pp]=T_STO; progparam_mem[pp]=mem_i; pp++;
           // jmp to top i
@@ -171,29 +172,27 @@ class mpars {
           stk[sp]=memi[progparam_mem[pp]];
 				  sp++;
 				  break;
+        case T_PSH|TM_IMM_I:
+          /* immediate int */
+          stk[sp]=progparam_i[pp];
+          sp++;
+          break;
+        case T_PSH|TM_IMM_D:
+          /* immediate d*/
+          stk[sp]=progparam_d[pp];
+          sp++;
+          break;
         case T_PSH:
-             //prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
-             //prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=numobj; pp++;
-          if (progparam_mem[pp]==-1) {
-            /* immediate int */
-            stk[sp]=progparam_i[pp];
-          } else if (progparam_mem[pp]==-2) {
-            /* immediate d*/
-            stk[sp]=progparam_d[pp];
-          } else {
-            stk[sp]=mem[progparam_mem[pp]];
-          }
+          stk[sp]=mem[progparam_mem[pp]];
           sp++;
           break;
         case T_FNC:
           switch (progparam_mem[pp]) {
             case F_sin:
-              //stk[sp-1]=Math.sin(stk[sp-1]);
-              stk[sp-1]=(stk[sp-1]);
+              stk[sp-1]=Math.sin(stk[sp-1]);
               break;
             case F_cos:
-              //stk[sp-1]=Math.cos(stk[sp-1]);
-              stk[sp-1]=(stk[sp-1]);
+              stk[sp-1]=Math.cos(stk[sp-1]);
               break;
           }
           break;
