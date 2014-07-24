@@ -33,66 +33,90 @@ class mpars {
     int mem_x=mp; mp+=numobj;
     int mem_y=mp; mp+=numobj;
 		int pploop1;
+		int pploop2;
     // j=0
-		// 27 seconds on apple mac
+		// 27 seconds on apple mac (redo with latest changes)
+		// 33 seconds on work machine seconds 
 
-    //mem[mem_v]=mem[mem_v]+Math.sin(memi[mem_i]);
-    prog[pp]=T_PSH ; progparam_mem[pp]=mem_v; pp++;
-    prog[pp]=T_PSH |TM_INT; progparam_mem[pp]=mem_i; pp++;
-    prog[pp]=T_FNC; progparam_mem[pp]=F_sin; pp++;
-    prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
-    prog[pp]=T_STO; progparam_mem[pp]=mem_v; pp++;
+          //for (memi[mem_i]=0; memi[mem_i]</*2*/ 1000 ; ++memi[mem_i]) {
+          prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=0; pp++;
+          prog[pp]=T_STO; progparam_mem[pp]=mem_i; pp++;
+            // i loop
+		        pploop2=pp;
 
-    prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=0; pp++;
-    prog[pp]=T_STO; progparam_mem[pp]=mem_j; pp++;
-      // j loop
-		  pploop1=pp;
-      prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=mem_x; pp++;
-      prog[pp]=T_PSH ; progparam_mem[pp]=mem_j; pp++;
-      prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
-      prog[pp]=T_FNC | TM_MEMIND ; pp++;   // read stack, convert this to memory address and read that // note about doubles
-      prog[pp]=T_PSH; progparam_mem[pp]=mem_v; pp++;
-      prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
-      prog[pp]=T_FNC; progparam_mem[pp]=F_cos; pp++;
-      prog[pp]=T_PRF; progparam_mem[pp]=O_MULT; pp++;
-      prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
-  
-      prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=mem_x; pp++;
-      prog[pp]=T_PSH ; progparam_mem[pp]=mem_j; pp++;
-      prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
-      prog[pp]=T_STO | TM_MEMIND ; pp++;   // read stack, convert this to memory address and write the earlier on stack (-2) that // note about doubles
-      //prog[pp]=T_STO; progparam_mem[pp]=mem_x+memi[mem_j]; pp++;
-  
-		  //
-      prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=mem_y; pp++;
-      prog[pp]=T_PSH ; progparam_mem[pp]=mem_j; pp++;
-      prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
-      prog[pp]=T_FNC | TM_MEMIND ; pp++;   // read stack, convert this to memory address and read that // note about doubles
-      prog[pp]=T_PSH; progparam_mem[pp]=mem_v; pp++;
-      prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
-      prog[pp]=T_FNC; progparam_mem[pp]=F_sin; pp++;
-      prog[pp]=T_PRF; progparam_mem[pp]=O_MULT; pp++;
-      prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
-  
-      prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=mem_y; pp++;
-      prog[pp]=T_PSH ; progparam_mem[pp]=mem_j; pp++;
-      prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
-      prog[pp]=T_STO | TM_MEMIND ; pp++;   // read stack, convert this to memory address and write the earlier on stack (-2) that // note about doubles
-       
-    // j<numobj
-    prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
-    prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=numobj; pp++;
-    prog[pp]=T_PRF; progparam_mem[pp]=O_LT; pp++;
-    // jmp out
-    prog[pp]=T_BEQ; progparam_mem[pp]=pp+6; pp++;
-    // j++
-    prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
-    prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=1; pp++;
-    prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
-    prog[pp]=T_STO; progparam_mem[pp]=mem_j; pp++;
-    // jmp to top j
-    prog[pp]=T_JMP; progparam_mem[pp]=pploop1; pp++;
-    // out:
+            //mem[mem_v]=mem[mem_v]+Math.sin(memi[mem_i]);
+            prog[pp]=T_PSH ; progparam_mem[pp]=mem_v; pp++;
+            //prog[pp]=T_PSH |TM_INT; progparam_mem[pp]=mem_i; pp++;
+            prog[pp]=T_PSH ; progparam_mem[pp]=mem_i; pp++;
+            prog[pp]=T_FNC; progparam_mem[pp]=F_sin; pp++;
+            prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
+            prog[pp]=T_STO; progparam_mem[pp]=mem_v; pp++;
+        
+            prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=0; pp++;
+            prog[pp]=T_STO; progparam_mem[pp]=mem_j; pp++;
+              // j loop
+		          pploop1=pp;
+              prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=mem_x; pp++;
+              prog[pp]=T_PSH ; progparam_mem[pp]=mem_j; pp++;
+              prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
+              prog[pp]=T_FNC | TM_MEMIND ; pp++;   // read stack, convert this to memory address and read that // note about doubles
+              prog[pp]=T_PSH; progparam_mem[pp]=mem_v; pp++;
+              prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
+              prog[pp]=T_FNC; progparam_mem[pp]=F_cos; pp++;
+              prog[pp]=T_PRF; progparam_mem[pp]=O_MULT; pp++;
+              prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
+          
+              prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=mem_x; pp++;
+              prog[pp]=T_PSH ; progparam_mem[pp]=mem_j; pp++;
+              prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
+              prog[pp]=T_STO | TM_MEMIND ; pp++;   // read stack, convert this to memory address and write the earlier on stack (-2) that // note about doubles
+              //prog[pp]=T_STO; progparam_mem[pp]=mem_x+memi[mem_j]; pp++;
+          
+		          //
+              prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=mem_y; pp++;
+              prog[pp]=T_PSH ; progparam_mem[pp]=mem_j; pp++;
+              prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
+              prog[pp]=T_FNC | TM_MEMIND ; pp++;   // read stack, convert this to memory address and read that // note about doubles
+              prog[pp]=T_PSH; progparam_mem[pp]=mem_v; pp++;
+              prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
+              prog[pp]=T_FNC; progparam_mem[pp]=F_sin; pp++;
+              prog[pp]=T_PRF; progparam_mem[pp]=O_MULT; pp++;
+              prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
+          
+              prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=mem_y; pp++;
+              prog[pp]=T_PSH ; progparam_mem[pp]=mem_j; pp++;
+              prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
+              prog[pp]=T_STO | TM_MEMIND ; pp++;   // read stack, convert this to memory address and write the earlier on stack (-2) that // note about doubles
+               
+            // j<numobj
+            prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
+            prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=numobj-1; pp++;
+            prog[pp]=T_PRF; progparam_mem[pp]=O_LT; pp++;
+            // jmp out
+            prog[pp]=T_BEQ; progparam_mem[pp]=pp+6; pp++;
+            // j++
+            prog[pp]=T_PSH; progparam_mem[pp]=mem_j; pp++;
+            prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=1; pp++;
+            prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
+            prog[pp]=T_STO; progparam_mem[pp]=mem_j; pp++;
+            // jmp to top j
+            prog[pp]=T_JMP; progparam_mem[pp]=pploop1; pp++;
+            // out:
+          // i<numobj
+          prog[pp]=T_PSH; progparam_mem[pp]=mem_i; pp++;
+          prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=numobj-1; pp++;
+          prog[pp]=T_PRF; progparam_mem[pp]=O_LT; pp++;
+          // jmp out
+          prog[pp]=T_BEQ; progparam_mem[pp]=pp+6; pp++;
+          // i++
+          prog[pp]=T_PSH; progparam_mem[pp]=mem_i; pp++;
+          prog[pp]=T_PSH; progparam_mem[pp]=-1; progparam_i[pp]=1; pp++;
+          prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
+          prog[pp]=T_STO; progparam_mem[pp]=mem_i; pp++;
+          // jmp to top i
+          prog[pp]=T_JMP; progparam_mem[pp]=pploop2; pp++;
+          // out:
+
     prog[pp]=T_END; pp++;
 
 		System.out.printf("Program steps %d\n",pp);
@@ -102,7 +126,7 @@ class mpars {
       memi[mem_y+memi[mem_i]]=57-memi[mem_i];
     }
     for (memi[mem_iter]=0; memi[mem_iter]</*2*/ 100; ++memi[mem_iter]) {
-      for (memi[mem_i]=0; memi[mem_i]</*2*/ 1000 ; ++memi[mem_i]) {
+      //for (memi[mem_i]=0; memi[mem_i]</*2*/ 1000 ; ++memi[mem_i]) {
         //mem[mem_v]=mem[mem_v]+Math.sin(memi[mem_i]);
         //for (memi[mem_j]=0; memi[mem_j]<numobj; ++memi[mem_j]) {
           //mem[mem_x+memi[mem_j]]=mem[mem_x+memi[mem_j]]+mem[mem_v]*Math.cos(memi[mem_j]*1.0);
@@ -110,8 +134,9 @@ class mpars {
         //}
         // rn sub program from start
         run_prog(0);
+         //System.out.printf("Total instructions = %d\n",ic);
 
-      }
+      //}
       System.out.printf("part=%f\n",mem[mem_v]);
     }
     System.out.printf("%f\n",mem[mem_v]);
@@ -123,6 +148,7 @@ class mpars {
   }
 
   int verbose=0;
+  int ic=0;
 
   int run_prog(int pp) {
     int instr;
@@ -130,6 +156,7 @@ class mpars {
     mainloop:
     while(true) {
       instr=prog[pp];
+      ic++;
   //public enum ProgType { T_PSH, T_FNC, T_PRF, T_JMP, T_STO, T_END };
       if (verbose>0) { System.out.printf("%06d Got instr =%d\n",pp,instr); }
       switch (instr) {
@@ -161,10 +188,12 @@ class mpars {
         case T_FNC:
           switch (progparam_mem[pp]) {
             case F_sin:
-              stk[sp-1]=Math.sin(stk[sp-1]);
+              //stk[sp-1]=Math.sin(stk[sp-1]);
+              stk[sp-1]=(stk[sp-1]);
               break;
             case F_cos:
-              stk[sp-1]=Math.cos(stk[sp-1]);
+              //stk[sp-1]=Math.cos(stk[sp-1]);
+              stk[sp-1]=(stk[sp-1]);
               break;
           }
           break;
@@ -173,31 +202,19 @@ class mpars {
           if (verbose>0) { System.out.printf("  Performing op %d\n",progparam_mem[pp]); }
           switch (progparam_mem[pp]) {
             case O_LT:
-              if (verbose>0) {
-                System.out.printf("%f < %f\n",stk[sp-2],stk[sp-1]);
-              }
+              if (verbose>0) { System.out.printf("%f < %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=(stk[sp-2]<stk[sp-1])?-1:0;
-              if (verbose>0) {
-                System.out.printf(" = %f\n",stk[sp-2]);
-              }
+              if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
             case O_PLUS:
-              if (verbose>0) {
-                System.out.printf(" %f + %f\n",stk[sp-2],stk[sp-1]);
-              }
+              if (verbose>0) { System.out.printf(" %f + %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=stk[sp-2]+stk[sp-1];
-              if (verbose>0) {
-                System.out.printf(" = %f\n",stk[sp-2]);
-              }
+              if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
             case O_MULT:
-              if (verbose>0) {
-                System.out.printf(" %f * %f\n",stk[sp-2],stk[sp-1]);
-              }
+              if (verbose>0) { System.out.printf(" %f * %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=stk[sp-2]*stk[sp-1];
-              if (verbose>0) {
-                System.out.printf(" = %f\n",stk[sp-2]);
-              }
+              if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
           }
           sp--;
@@ -214,17 +231,13 @@ class mpars {
           pp=progparam_mem[pp];
           continue mainloop;
         case T_STO | TM_MEMIND:
-          if (verbose>0) {
-            System.out.printf("Storing IND %f\n",stk[sp-1]);
-          }
+          if (verbose>0) { System.out.printf("Storing IND %f\n",stk[sp-1]); }
           mem[(int)stk[sp-1]]=stk[sp-2];
           sp--;
           sp--;
           break;
         case T_STO:
-          if (verbose>0) {
-            System.out.printf("Storing %f\n",stk[sp-1]);
-          }
+          if (verbose>0) { System.out.printf("Storing %f\n",stk[sp-1]); }
           mem[progparam_mem[pp]]=stk[sp-1];
           sp--;
           break;
