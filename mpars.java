@@ -15,7 +15,7 @@ class mpars {
     ":L44 m0,999<?L53,m0,1+.m0#L2\n"+
     ":L53 ##\n";
 
-  static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7;
+  static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7, T_PRINT=8;
   //static final int TM_MEM=256, TM_MEMIND=512, TM_INT=1024, TM_IMM_I=2048, TM_IMM_D=4096;
   static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5;
   static final int O_LT=0, O_PLUS=1, O_MULT=2;
@@ -45,7 +45,7 @@ class mpars {
    :L53 ##
    -------------------------
  */
-    static final int M_NONE=0, M_VAR=1, M_NUM=2, M_STORE=3, M_LABEL=4, M_ADDR=5, M_OP=6, M_READADDR=7, M_JUMP=8, M_BRANCH=9, M_STOADDR=10;
+    static final int M_NONE=0, M_VAR=1, M_NUM=2, M_STORE=3, M_LABEL=4, M_ADDR=5, M_OP=6, M_READADDR=7, M_JUMP=8, M_BRANCH=9, M_STOADDR=10, M_PRINT=11;
     int f=M_NONE;
     int m=M_NONE;
     String build="";
@@ -54,6 +54,8 @@ class mpars {
   void printinstr() {
         if (f==M_OP) {
             System.out.printf("   %-8s : PRF %c\n","",op);
+        } else if (f==M_PRINT) {
+            System.out.printf("   %-8s : PRINT %s\n",build);
         } else if (f==M_STOADDR) {
             System.out.printf("   %-8s : STO []\n","");
         } else if (f==M_READADDR) {
@@ -117,6 +119,11 @@ class mpars {
         f=M_BRANCH;
         continue;
       }
+      if (c=='~') {
+        f=M_PRINT;
+        printinstr();
+        continue;
+      }
       if (c=='&') {
         f=M_STOADDR;
         printinstr();
@@ -164,10 +171,17 @@ class mpars {
     int mem_y=mp; mp+=numobj;
 		int pploop1;
 		int pploop2;
+		int pploop3;
     // j=0
 		// 27 seconds on apple mac (redo with latest changes)
 		// 33 seconds on work machine seconds 
 
+        //for (memi[mem_iter]=0; memi[mem_iter]</*2*/ 100; ++memi[mem_iter]) {
+        prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=0; pp++;
+        prog[pp]=T_STO; progparam_mem[pp]=mem_iter; pp++;
+          // iter loop
+          pploop3=pp;
+      
           //for (memi[mem_i]=0; memi[mem_i]</*2*/ 1000 ; ++memi[mem_i]) {
           prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=0; pp++;
           prog[pp]=T_STO; progparam_mem[pp]=mem_i; pp++;
@@ -246,6 +260,23 @@ class mpars {
           // jmp to top i
           prog[pp]=T_JMP; progparam_mem[pp]=pploop2; pp++;
           // out:
+        prog[pp]=T_PRINT; progparam_mem[pp]=mem_v; pp++;
+          
+        // iter<100
+        prog[pp]=T_PSH; progparam_mem[pp]=mem_iter; pp++;
+        prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=100-1; pp++;
+        prog[pp]=T_PRF; progparam_mem[pp]=O_LT; pp++;
+        // jmp out
+        prog[pp]=T_BEQ; progparam_mem[pp]=pp+6; pp++;
+        // iter++
+        prog[pp]=T_PSH; progparam_mem[pp]=mem_iter; pp++;
+        prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=1; pp++;
+        prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++;
+        prog[pp]=T_STO; progparam_mem[pp]=mem_iter; pp++;
+        // jmp to top iter
+        prog[pp]=T_JMP; progparam_mem[pp]=pploop3; pp++;
+        // out:
+      prog[pp]=T_PRINT; progparam_mem[pp]=mem_v; pp++;
 
     prog[pp]=T_END; pp++;
 
@@ -261,7 +292,7 @@ class mpars {
       memi[mem_x+memi[mem_i]]=57+memi[mem_i];
       memi[mem_y+memi[mem_i]]=57-memi[mem_i];
     }
-    for (memi[mem_iter]=0; memi[mem_iter]</*2*/ 100; ++memi[mem_iter]) {
+    //for (memi[mem_iter]=0; memi[mem_iter]</*2*/ 100; ++memi[mem_iter]) {
       //for (memi[mem_i]=0; memi[mem_i]</*2*/ 1000 ; ++memi[mem_i]) {
         //mem[mem_v]=mem[mem_v]+Math.sin(memi[mem_i]);
         //for (memi[mem_j]=0; memi[mem_j]<numobj; ++memi[mem_j]) {
@@ -273,10 +304,11 @@ class mpars {
          //System.out.printf("Total instructions = %d\n",ic);
 
       //}
-      System.out.printf("part=%f\n",mem[mem_v]);
-    }
-    System.out.printf("%f\n",mem[mem_v]);
+      //System.out.printf("part=%f\n",mem[mem_v]);
+    //}
+    //System.out.printf("%f\n",mem[mem_v]);
 
+   // display values for comparison
    for (memi[mem_j]=0; memi[mem_j]<numobj; ++memi[mem_j]) {
       System.out.printf("  %d]%f\n",memi[mem_j],mem[mem_x+memi[mem_j]]);
    }
@@ -316,6 +348,9 @@ class mpars {
           /* immediate d*/
           stk[sp]=progparam_d[pp];
           sp++;
+          break;
+        case T_PRINT:
+          System.out.printf("%f\n",mem[progparam_mem[pp]]);
           break;
         case T_PSH:
           stk[sp]=mem[progparam_mem[pp]];
