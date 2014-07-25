@@ -7,13 +7,15 @@ class mpars {
   }
 
   String assem = 
-    "0 .m0\n"+
-    ":L2 m3,m0,sin+.m3,0 .m1\n"+
-    ":L9 m4'm1+@m3,m1,cos*+m4'm1+.&\n"+
+    "0 .m2\n"+
+    ":L2 0 .m0\n"+
+    ":L4 m3,m0,sin+.m3,0 .m1\n"+
+    ":L11 m4'm1+@m3,m1,cos*+m4'm1+.&\n"+
     "m1004'm1+@m3,m1,sin*+m1004'm1+.&\n"+
-    "m1,999<?L44,m1,1+.m1#L9\n"+
-    ":L44 m0,999<?L53,m0,1+.m0#L2\n"+
-    ":L53 ##\n";
+    "m1,999<?L46,m1,1+.m1#L11\n"+
+    ":L46 m0,999<?L55,m0,1+.m0#L4\n"+
+    ":L55 m3~m2,99<?L65,m2,1+.m2#L2\n"+
+    ":L65 m3~##\n";
 
   static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7, T_PRINT=8;
   //static final int TM_MEM=256, TM_MEMIND=512, TM_INT=1024, TM_IMM_I=2048, TM_IMM_D=4096;
@@ -33,7 +35,6 @@ class mpars {
     int memi[]=new int[MAXMEM];   
     double stk[]=new double[MAXSTK]; int sp=0;
     
-
 /*
    -------------------------
    0 .m0
@@ -45,41 +46,68 @@ class mpars {
    :L53 ##
    -------------------------
  */
-    static final int M_NONE=0, M_VAR=1, M_NUM=2, M_STORE=3, M_LABEL=4, M_ADDR=5, M_OP=6, M_READADDR=7, M_JUMP=8, M_BRANCH=9, M_STOADDR=10, M_PRINT=11;
+    static final int M_NONE=0, M_VAR=1, M_NUM=2, M_STORE=3, M_LABEL=4, M_ADDR=5, M_OP=6, M_READADDR=7, M_JUMP=8, M_BRANCH=9, M_STOADDR=10, M_PRINT=11, M_END=12;
     int f=M_NONE;
     int m=M_NONE;
     String build="";
     char op=' ';
+  boolean writeprog=true;
   
+  int strip_m(String s, int start) {
+    int x;
+    x=Integer.parseInt(s.substring(start));
+    //System.out.printf("x=%d\n",x);
+    return x;
+  }
+
   void printinstr() {
         if (f==M_OP) {
             System.out.printf("   %-8s : PRF %c\n","",op);
+            if (writeprog && op=='<') { prog[pp]=T_PRF; progparam_mem[pp]=O_LT; pp++; }
+            if (writeprog && op=='+') { prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++; }
+            if (writeprog && op=='*') { prog[pp]=T_PRF; progparam_mem[pp]=O_MULT; pp++; }
+        } else if (f==M_END) {
+            System.out.printf("   %-8s : END\n","");
+            if (writeprog) { prog[pp]=T_END; pp++; }
         } else if (f==M_PRINT) {
-            System.out.printf("   %-8s : PRINT %s\n",build);
+            System.out.printf("   %-8s : PRINT %s\n","",build);
+            if (writeprog) { prog[pp]=T_PRINT; progparam_mem[pp]=strip_m(build,1); pp++; }
         } else if (f==M_STOADDR) {
             System.out.printf("   %-8s : STO []\n","");
+            if (writeprog) { prog[pp]=T_STO | TM_MEMIND ; pp++; }
         } else if (f==M_READADDR) {
             System.out.printf("   %-8s : FNC []\n","");
+            if (writeprog) { prog[pp]=T_FNC | TM_MEMIND ; pp++; }
         } else if (m==M_NUM || m==M_VAR) {
           //System.out.printf("             got %s %d %d op=%c\n",build,m,f,op);
           if (f==M_LABEL) {
             System.out.printf("  :%-8s : LABEL\n",build);
           } else if (m==M_NUM && f==M_NONE) {
             System.out.printf("   %-8s : PSH# %s\n","",build);
+            if (writeprog) { prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=strip_m(build,0); pp++; }
           } else if (m==M_VAR && f==M_JUMP) {
-              System.out.printf("   %-8s : JMP %s\n","",build);
+            System.out.printf("   %-8s : JMP %s\n","",build);
+            if (writeprog) { prog[pp]=T_JMP; progparam_mem[pp]=strip_m(build,1); pp++; }
           } else if (m==M_VAR && f==M_BRANCH) {
-              System.out.printf("   %-8s : BEQ %s\n","",build);
+            System.out.printf("   %-8s : BEQ %s\n","",build);
+            if (writeprog) { prog[pp]=T_BEQ; progparam_mem[pp]=strip_m(build,1); pp++; }
           } else if (m==M_VAR && f==M_ADDR) {
-              System.out.printf("   %-8s : PSH [%s]\n","",build);
+            System.out.printf("   %-8s : PSH [%s]\n","",build);
+            if (writeprog) { prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=strip_m(build,1); pp++; }
           } else if (m==M_VAR && f==M_STORE) {
-              System.out.printf("   %-8s : STO %s\n","",build);
+            System.out.printf("   %-8s : STO %s\n","",build);
+            if (writeprog) { prog[pp]=T_STO; progparam_mem[pp]=strip_m(build,1); pp++; }
           } else if (m==M_VAR && f==M_NONE) {
             // check for functions
-            if (build.equals("sin") || build.equals("cos")) {
+            if (build.equals("sin")) {
               System.out.printf("   %-8s : FNC %s\n","",build);
+              if (writeprog) { prog[pp]=T_FNC; progparam_mem[pp]=F_sin; pp++; }
+            } else if (build.equals("cos")) {
+              System.out.printf("   %-8s : FNC %s\n","",build);
+              if (writeprog) { prog[pp]=T_FNC; progparam_mem[pp]=F_cos; pp++; }
             } else {
               System.out.printf("   %-8s : PSH %s\n","",build);
+              if (writeprog) { prog[pp]=T_PSH ; progparam_mem[pp]=strip_m(build,1); pp++; }
             }
           }
         }
@@ -90,6 +118,7 @@ class mpars {
   }
 
   void assemble(String s) {
+        if (writeprog) pp=0;
     for(char c : s.toCharArray()) {
       // process c
       if (c==' ' || c=='\n' || c=='\r' || c==',') {
@@ -132,6 +161,11 @@ class mpars {
       if (c==':') {
         printinstr();
         f=M_LABEL;
+        continue;
+      }
+      if (f==M_JUMP && c=='#') {
+        f=M_END;
+        printinstr();
         continue;
       }
       if (c=='#') {
@@ -282,10 +316,16 @@ class mpars {
 
 		System.out.printf("Program steps %d\n",pp);
 
-    System.out.printf("-------------------------\n");
-    assemble(assem);
-    System.out.printf("-------------------------\n");
+    System.out.printf("--print-prog----------------------\n");
     print_prog(0);
+    System.out.printf("\n-------------------------\n");
+    writeprog=true;
+    assemble(assem);
+    System.out.printf("--print-prog----------------------\n");
+    print_prog(0);
+    System.out.printf("\n-------------------------\n");
+    writeprog=false;
+    assemble(assem);
     System.out.printf("\n-------------------------\n");
 
     for (memi[mem_i]=0; memi[mem_i]<numobj; ++memi[mem_i]) {
@@ -466,6 +506,11 @@ class mpars {
           if (nc) System.out.printf(",");
           System.out.printf("%f",progparam_d[pp]);
           nc=true;
+          break;
+        case T_PRINT:
+          if (nc) System.out.printf(",");
+          System.out.printf("m%d~",progparam_mem[pp]);
+          nc=false;
           break;
         case T_PSH:
           if (nc) System.out.printf(",");
