@@ -20,12 +20,12 @@ class mpars {
     ////----------
     "0 .m2\n"+
     ":L2 0 .m0\n"+
-    ":L4 m3,m0,sin+.m3,0 .m1\n"+
+    ":LI m3,m0,sin+.m3,0 .m1\n"+
     ":L11 m4'm1+@m3,m1,cos*+m4'm1+.&\n"+
     "m1004'm1+@m3,m1,sin*+m1004'm1+.&\n"+
     "m1,999<?L46,m1,1+.m1#L11\n"+
-    ":L46 m0,999<?L55,m0,1+.m0#L4\n"+
-    ":L55 m3~m2,99<?L65,m2,1+.m2#L2\n"+
+    ":L46 m0,999<?LI_,m0,1+.m0#LI\n"+
+    ":LI_ m3~m2,99<?L65,m2,1+.m2#L2\n"+
     ":L65 m3~##\n";
 
   static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7, T_PRINT=8;
