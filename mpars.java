@@ -6,7 +6,18 @@ class mpars {
     test();
   }
 
+/*
+    for (memi[mem_i]=0; memi[mem_i]<numobj; ++memi[mem_i]) {
+      memi[mem_x+memi[mem_i]]=57+memi[mem_i];
+      memi[mem_y+memi[mem_i]]=57-memi[mem_i];
+    }
+*/
   String assem = 
+    "0 .m0 :Li\n"+
+    "57,m0+m4'm0+.&\n"+
+    "57,m0-m1004'm0+.&\n"+
+    "m0,999<?Li_,m0,1+.m0#Li:Li_\n"+
+    ////----------
     "0 .m2\n"+
     ":L2 0 .m0\n"+
     ":L4 m3,m0,sin+.m3,0 .m1\n"+
@@ -18,9 +29,8 @@ class mpars {
     ":L65 m3~##\n";
 
   static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7, T_PRINT=8;
-  //static final int TM_MEM=256, TM_MEMIND=512, TM_INT=1024, TM_IMM_I=2048, TM_IMM_D=4096;
   static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5;
-  static final int O_LT=0, O_PLUS=1, O_MULT=2;
+  static final int O_LT=0, O_PLUS=1, O_MULT=2, O_MINUS=3;
   static final int F_cos=0, F_sin=1;
 
     int MAXPROG=1000;
@@ -34,6 +44,8 @@ class mpars {
     double mem[]=new double[MAXMEM];    int mp=0;
     int memi[]=new int[MAXMEM];   
     double stk[]=new double[MAXSTK]; int sp=0;
+// only for parsing
+    String progparam_str[]=new String[MAXPROG]; 
     
 /*
    -------------------------
@@ -60,11 +72,21 @@ class mpars {
     return x;
   }
 
+  String labelstr[]=new String[100];
+  int labelint[]=new int[100];
+  int labeltop=0;
+
+  void add_label(String label, int pp) {
+    labelstr[labeltop]=label;
+    labelint[labeltop]=pp;
+    labeltop++;
+  }
   void printinstr() {
         if (f==M_OP) {
             System.out.printf("   %-8s : PRF %c\n","",op);
             if (writeprog && op=='<') { prog[pp]=T_PRF; progparam_mem[pp]=O_LT; pp++; }
             if (writeprog && op=='+') { prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++; }
+            if (writeprog && op=='-') { prog[pp]=T_PRF; progparam_mem[pp]=O_MINUS; pp++; }
             if (writeprog && op=='*') { prog[pp]=T_PRF; progparam_mem[pp]=O_MULT; pp++; }
         } else if (f==M_END) {
             System.out.printf("   %-8s : END\n","");
@@ -82,15 +104,23 @@ class mpars {
           //System.out.printf("             got %s %d %d op=%c\n",build,m,f,op);
           if (f==M_LABEL) {
             System.out.printf("  :%-8s : LABEL\n",build);
+            if (writeprog) {
+              // keep a copy of pp for this label
+              add_label(build,pp);
+              // at the end, rewrite all the jumps and beqs
+              progparam_str[pp]=new String(build); // for reconstruction
+            }
           } else if (m==M_NUM && f==M_NONE) {
             System.out.printf("   %-8s : PSH# %s\n","",build);
             if (writeprog) { prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=strip_m(build,0); pp++; }
           } else if (m==M_VAR && f==M_JUMP) {
             System.out.printf("   %-8s : JMP %s\n","",build);
-            if (writeprog) { prog[pp]=T_JMP; progparam_mem[pp]=strip_m(build,1); pp++; }
+            //if (writeprog) { prog[pp]=T_JMP; progparam_mem[pp]=strip_m(build,1); pp++; }
+            if (writeprog) { prog[pp]=T_JMP; progparam_mem[pp]=-1; progparam_str[pp]=new String(build); pp++; }
           } else if (m==M_VAR && f==M_BRANCH) {
             System.out.printf("   %-8s : BEQ %s\n","",build);
-            if (writeprog) { prog[pp]=T_BEQ; progparam_mem[pp]=strip_m(build,1); pp++; }
+            //if (writeprog) { prog[pp]=T_BEQ; progparam_mem[pp]=strip_m(build,1); pp++; }
+            if (writeprog) { prog[pp]=T_BEQ; progparam_mem[pp]=-1; progparam_str[pp]=new String(build); pp++; }
           } else if (m==M_VAR && f==M_ADDR) {
             System.out.printf("   %-8s : PSH [%s]\n","",build);
             if (writeprog) { prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=strip_m(build,1); pp++; }
@@ -192,6 +222,21 @@ class mpars {
       if (m==M_NUM || m==M_VAR && (c>='a' && c<='z' || c>='A' && c<='Z' || c>='0' && c<='9' || c=='_')) {
         build+=c+"";
         continue;
+      }
+    }
+    if (writeprog) {
+      int i;
+      int p;
+      // perform label substitions
+      for (p=0; p<pp; ++p) {
+        if (prog[p]==T_JMP || prog[p]==T_BEQ) {
+          for (i=0; i<labeltop; ++i) {
+            if (labelstr[i].equals(progparam_str[p])) {
+              System.out.printf("Found label %s at location %d\n",labelstr[i],labelint[i]);
+              progparam_mem[p]=labelint[i];
+            }
+          }
+        }
       }
     }
   }
@@ -319,8 +364,7 @@ class mpars {
     System.out.printf("--print-prog----------------------\n");
     print_prog(0);
     System.out.printf("\n-------------------------\n");
-    writeprog=true;
-    assemble(assem);
+    writeprog=true; assemble(assem);
     System.out.printf("--print-prog----------------------\n");
     print_prog(0);
     System.out.printf("\n-------------------------\n");
@@ -328,10 +372,10 @@ class mpars {
     assemble(assem);
     System.out.printf("\n-------------------------\n");
 
-    for (memi[mem_i]=0; memi[mem_i]<numobj; ++memi[mem_i]) {
-      memi[mem_x+memi[mem_i]]=57+memi[mem_i];
-      memi[mem_y+memi[mem_i]]=57-memi[mem_i];
-    }
+    //for (memi[mem_i]=0; memi[mem_i]<numobj; ++memi[mem_i]) {
+      //memi[mem_x+memi[mem_i]]=57+memi[mem_i];
+      //memi[mem_y+memi[mem_i]]=57-memi[mem_i];
+    //}
     //for (memi[mem_iter]=0; memi[mem_iter]</*2*/ 100; ++memi[mem_iter]) {
       //for (memi[mem_i]=0; memi[mem_i]</*2*/ 1000 ; ++memi[mem_i]) {
         //mem[mem_v]=mem[mem_v]+Math.sin(memi[mem_i]);
@@ -420,6 +464,11 @@ class mpars {
               stk[sp-2]=stk[sp-2]+stk[sp-1];
               if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
+            case O_MINUS:
+              if (verbose>0) { System.out.printf(" %f - %f\n",stk[sp-2],stk[sp-1]); }
+              stk[sp-2]=stk[sp-2]-stk[sp-1];
+              if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
+              break;
             case O_MULT:
               if (verbose>0) { System.out.printf(" %f * %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=stk[sp-2]*stk[sp-1];
@@ -474,7 +523,11 @@ class mpars {
         case T_JMP:
           if (pp==progparam_mem[i]) {
             //System.out.printf("\n:(%d) ",pp);
-            System.out.printf("\n:L%d ",pp);
+            if (progparam_str[pp] != null) {
+              System.out.printf("\n:%s ",progparam_str[pp]);
+            } else {
+              System.out.printf("\n:L%d ",pp);
+            } 
             nc=false;
           }
           break;
@@ -539,6 +592,9 @@ class mpars {
             case O_PLUS:
               System.out.printf("+");
               break;
+            case O_MINUS:
+              System.out.printf("-");
+              break;
             case O_MULT:
               System.out.printf("*");
               break;
@@ -547,12 +603,20 @@ class mpars {
           break;
         case T_BEQ:
           //System.out.printf("?(%d)",progparam_mem[pp]);
-          System.out.printf("?L%d",progparam_mem[pp]);
+          if (progparam_str[progparam_mem[pp]] != null) {
+            System.out.printf("?%s",progparam_str[progparam_mem[pp]]);
+          } else {
+            System.out.printf("?L%d",progparam_mem[pp]);
+          }
           nc=true;
           break;
         case T_JMP:
           //System.out.printf("#(%d)",progparam_mem[pp]);
-          System.out.printf("#L%d",progparam_mem[pp]);
+          if (progparam_str[progparam_mem[pp]] != null) {
+            System.out.printf("#%s",progparam_str[progparam_mem[pp]]);
+          } else {
+            System.out.printf("#L%d",progparam_mem[pp]);
+          }
           nc=true;
           break;
         case T_STO | TM_MEMIND:
