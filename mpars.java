@@ -13,6 +13,12 @@ class mpars {
     }
 */
   String assem = 
+    ":i=1\n"+        // i
+    ":m1=1\n"+        // j
+    ":m2=1\n"+        // iter
+    ":m3=1\n"+        // v
+    ":m4=1000\n"+     // x[1000]
+    ":m1004=1000\n"+  // y[1000]
     "0 .m0 :Li\n"+
     "57,m0+m4'm0+.&\n"+
     "57,m0-m1004'm0+.&\n"+
@@ -46,6 +52,7 @@ class mpars {
     double stk[]=new double[MAXSTK]; int sp=0;
 // only for parsing
     String progparam_str[]=new String[MAXPROG]; 
+    String mem_str[]=new String[MAXMEM]; 
     
 /*
    -------------------------
@@ -58,7 +65,7 @@ class mpars {
    :L53 ##
    -------------------------
  */
-    static final int M_NONE=0, M_VAR=1, M_NUM=2, M_STORE=3, M_LABEL=4, M_ADDR=5, M_OP=6, M_READADDR=7, M_JUMP=8, M_BRANCH=9, M_STOADDR=10, M_PRINT=11, M_END=12;
+    static final int M_NONE=0, M_VAR=1, M_NUM=2, M_STORE=3, M_LABEL=4, M_ADDR=5, M_OP=6, M_READADDR=7, M_JUMP=8, M_BRANCH=9, M_STOADDR=10, M_PRINT=11, M_END=12, M_MEMORY=13;
     int f=M_NONE;
     int m=M_NONE;
     String build="";
@@ -82,7 +89,10 @@ class mpars {
     labeltop++;
   }
   void printinstr() {
-        if (f==M_OP) {
+        if (f==M_MEMORY && m==M_NUM) {
+          System.out.printf("Got a memory %s and %s (%d)\n",keep_label,build,strip_m(build,0));
+          if (writeprog) { mem_str[mp]=keep_label; mp+=strip_m(build,0); }
+        } else if (f==M_OP) {
             System.out.printf("   %-8s : PRF %c\n","",op);
             if (writeprog && op=='<') { prog[pp]=T_PRF; progparam_mem[pp]=O_LT; pp++; }
             if (writeprog && op=='+') { prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++; }
@@ -147,8 +157,13 @@ class mpars {
         build="";
   }
 
+  String keep_label="";
+
   void assemble(String s) {
-        if (writeprog) pp=0;
+        if (writeprog) { 
+           pp=0;
+           mp=0;
+        }
     for(char c : s.toCharArray()) {
       // process c
       if (c==' ' || c=='\n' || c=='\r' || c==',') {
@@ -176,6 +191,13 @@ class mpars {
       if (c=='?') {
         printinstr();
         f=M_BRANCH;
+        continue;
+      }
+      if (c=='=' && f==M_LABEL) {
+        f=M_MEMORY;
+        keep_label=new String(build);
+        build="";
+        m=M_NONE; // ready for a num
         continue;
       }
       if (c=='~') {
@@ -538,7 +560,11 @@ class mpars {
       switch (instr) {
         case T_PSH|TM_MEM:
           if (nc) System.out.printf(",");
-          System.out.printf("m%d'",progparam_mem[pp]);
+          if (mem_str[progparam_mem[pp]] != null) {
+            System.out.printf("%s'",mem_str[progparam_mem[pp]]);
+          } else {
+            System.out.printf("m%d'",progparam_mem[pp]);
+          }
           nc=false;
 				  break;
         case T_FNC|TM_MEMIND:
@@ -562,12 +588,20 @@ class mpars {
           break;
         case T_PRINT:
           if (nc) System.out.printf(",");
-          System.out.printf("m%d~",progparam_mem[pp]);
+          if (mem_str[progparam_mem[pp]] != null) {
+            System.out.printf("%s~",mem_str[progparam_mem[pp]]);
+          } else {
+            System.out.printf("m%d~",progparam_mem[pp]);
+          }
           nc=false;
           break;
         case T_PSH:
           if (nc) System.out.printf(",");
-          System.out.printf("m%d",progparam_mem[pp]);
+          if (mem_str[progparam_mem[pp]] != null) {
+            System.out.printf("%s~",mem_str[progparam_mem[pp]]);
+          } else {
+            System.out.printf("%s~",progparam_mem[pp]);
+          }
           nc=true;
           break;
         case T_FNC:
@@ -625,7 +659,11 @@ class mpars {
           break;
         case T_STO:
           if (nc) System.out.printf(" ");
-          System.out.printf(".m%d",progparam_mem[pp]);
+          if (mem_str[progparam_mem[pp]] != null) {
+            System.out.printf(".%s",mem_str[progparam_mem[pp]]);
+          } else {
+            System.out.printf(".m%d",progparam_mem[pp]);
+          }
           nc=true;
           break;
         case T_POP:
