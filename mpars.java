@@ -13,26 +13,25 @@ class mpars {
     }
 */
   String assem = 
-    ":i=1\n"+        // i
-    ":m1=1\n"+        // j
-    ":m2=1\n"+        // iter
-    ":m3=1\n"+        // v
-    ":m4=1000\n"+     // x[1000]
-    ":m1004=1000\n"+  // y[1000]
-    "0 .m0 :Li\n"+
-    "57,m0+m4'm0+.&\n"+
-    "57,m0-m1004'm0+.&\n"+
-    "m0,999<?Li_,m0,1+.m0#Li:Li_\n"+
+    ":i=1:j=1:k=1\n"+
+    ":v=1\n"+
+    ":x=1000\n"+
+    ":y=1000\n"+
     ////----------
-    "0 .m2\n"+
-    ":L2 0 .m0\n"+
-    ":LI m3,m0,sin+.m3,0 .m1\n"+
-    ":L11 m4'm1+@m3,m1,cos*+m4'm1+.&\n"+
-    "m1004'm1+@m3,m1,sin*+m1004'm1+.&\n"+
-    "m1,999<?L46,m1,1+.m1#L11\n"+
-    ":L46 m0,999<?LI_,m0,1+.m0#LI\n"+
-    ":LI_ m3~m2,99<?L65,m2,1+.m2#L2\n"+
-    ":L65 m3~##\n";
+    "0 .i :Li\n"+
+    "  57,i+x'i+.&\n"+
+    "  57,i-y'i+.&\n"+
+    "i,999<?Li_,i,1+.i#Li:Li_\n"+
+    "\n"+
+    "0 .k\n"+
+    ":LK 0 .i\n"+
+    "  :LI v,i,sin+.v,0 .j\n"+
+    "    :LJ x'j+@v,j,cos*+x'j+.&\n"+
+    "      y'j+@v,j,sin*+y'j+.&\n"+
+    "      j,999<?LJ_,j,1+.j#LJ\n"+
+    "    :LJ_ i,999<?LI_,i,1+.i#LI\n"+
+    "  :LI_ v~k,99<?LK_,k,1+.k#LK\n"+
+    ":LK_ v~##\n";
 
   static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7, T_PRINT=8;
   static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5;
@@ -65,13 +64,27 @@ class mpars {
    :L53 ##
    -------------------------
  */
-    static final int M_NONE=0, M_VAR=1, M_NUM=2, M_STORE=3, M_LABEL=4, M_ADDR=5, M_OP=6, M_READADDR=7, M_JUMP=8, M_BRANCH=9, M_STOADDR=10, M_PRINT=11, M_END=12, M_MEMORY=13;
+    static final int M_NONE=0, M_VAR=1, M_NUM=2, M_STORE=3, M_LABEL=4, M_ADDR=5, M_OP=6, M_READADDR=7, M_JUMP=8, M_BRANCH=9, M_STOADDR=10, M_PRINT=11, M_END=12, M_MEMORY=13,M_E=14;
     int f=M_NONE;
     int m=M_NONE;
     String build="";
     char op=' ';
   boolean writeprog=true;
   
+  int parse_mem(String s) {
+    try {
+      return strip_m(s,1);
+    } catch (java.lang.NumberFormatException e) {
+      // search for it in memory list
+      int i;
+      for (i=0; i<mp; ++i) if (s.equals(mem_str[i])) { 
+        //System.out.printf("FOund it %s=%d\n",s,i);
+        return i;
+      }
+      //throw java.lang.NumberFormatException;
+      return -1;
+    }
+  }
   int strip_m(String s, int start) {
     int x;
     x=Integer.parseInt(s.substring(start));
@@ -103,7 +116,7 @@ class mpars {
             if (writeprog) { prog[pp]=T_END; pp++; }
         } else if (f==M_PRINT) {
             System.out.printf("   %-8s : PRINT %s\n","",build);
-            if (writeprog) { prog[pp]=T_PRINT; progparam_mem[pp]=strip_m(build,1); pp++; }
+            if (writeprog) { prog[pp]=T_PRINT; progparam_mem[pp]=parse_mem(build); pp++; }
         } else if (f==M_STOADDR) {
             System.out.printf("   %-8s : STO []\n","");
             if (writeprog) { prog[pp]=T_STO | TM_MEMIND ; pp++; }
@@ -133,10 +146,10 @@ class mpars {
             if (writeprog) { prog[pp]=T_BEQ; progparam_mem[pp]=-1; progparam_str[pp]=new String(build); pp++; }
           } else if (m==M_VAR && f==M_ADDR) {
             System.out.printf("   %-8s : PSH [%s]\n","",build);
-            if (writeprog) { prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=strip_m(build,1); pp++; }
+            if (writeprog) { prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=parse_mem(build); pp++; }
           } else if (m==M_VAR && f==M_STORE) {
             System.out.printf("   %-8s : STO %s\n","",build);
-            if (writeprog) { prog[pp]=T_STO; progparam_mem[pp]=strip_m(build,1); pp++; }
+            if (writeprog) { prog[pp]=T_STO; progparam_mem[pp]=parse_mem(build); pp++; }
           } else if (m==M_VAR && f==M_NONE) {
             // check for functions
             if (build.equals("sin")) {
@@ -147,7 +160,7 @@ class mpars {
               if (writeprog) { prog[pp]=T_FNC; progparam_mem[pp]=F_cos; pp++; }
             } else {
               System.out.printf("   %-8s : PSH %s\n","",build);
-              if (writeprog) { prog[pp]=T_PSH ; progparam_mem[pp]=strip_m(build,1); pp++; }
+              if (writeprog) { prog[pp]=T_PSH ; progparam_mem[pp]=parse_mem(build); pp++; }
             }
           }
         }
@@ -241,7 +254,13 @@ class mpars {
         build+=c+"";
         continue;
       }
-      if (m==M_NUM || m==M_VAR && (c>='a' && c<='z' || c>='A' && c<='Z' || c>='0' && c<='9' || c=='_')) {
+      if (m==M_NUM && (c=='e' || c=='E')) {
+        f=M_E;
+        build+=c+"";
+        continue;
+      }
+      if (m==M_NUM && (c=='.' || c>='0' && c<='9' || f==M_E && (c=='-' || c=='+')) 
+          || m==M_VAR && (c>='a' && c<='z' || c>='A' && c<='Z' || c>='0' && c<='9' || c=='_')) {
         build+=c+"";
         continue;
       }
@@ -254,7 +273,7 @@ class mpars {
         if (prog[p]==T_JMP || prog[p]==T_BEQ) {
           for (i=0; i<labeltop; ++i) {
             if (labelstr[i].equals(progparam_str[p])) {
-              System.out.printf("Found label %s at location %d\n",labelstr[i],labelint[i]);
+              //System.out.printf("Found label %s at location %d\n",labelstr[i],labelint[i]);
               progparam_mem[p]=labelint[i];
             }
           }
@@ -598,9 +617,9 @@ class mpars {
         case T_PSH:
           if (nc) System.out.printf(",");
           if (mem_str[progparam_mem[pp]] != null) {
-            System.out.printf("%s~",mem_str[progparam_mem[pp]]);
+            System.out.printf("%s",mem_str[progparam_mem[pp]]);
           } else {
-            System.out.printf("%s~",progparam_mem[pp]);
+            System.out.printf("m%d",progparam_mem[pp]);
           }
           nc=true;
           break;
