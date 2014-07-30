@@ -36,8 +36,8 @@ class mpars {
     "  :LI_ v~k,99<?LK_,k,1+.k#LK\n"+
     ":LK_ v~##\n";
 
-  static final int T_PSH=0, T_STO=8, T_FNC=10, T_PRF=12, T_JMP=13, T_BEQ=14, T_END=15, T_POP=16, T_PRINT=17;
-  static final int TM_MEMIND=1, TM_MEM=1, TM_INT=2, TM_IMM_D=4, TM_IMM_I=5;
+  static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7, T_PRINT=8;
+  static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5;
   static final int O_LT=0, O_PLUS=1, O_MULT=2, O_MINUS=3, O_DIV=4;
   static final int F_cos=0, F_sin=1, F_int=2;
 
