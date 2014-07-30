@@ -437,6 +437,7 @@ static String readFile(String path/*, Charset encoding*/)
     } catch (Exception e) {
     }
     assemble(assem);
+		System.out.printf("Program steps %d\n",pp);
     System.out.printf("--print-prog----------------------\n");
     print_prog(0);
     System.out.printf("\n-------------------------\n");
