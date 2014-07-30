@@ -1,9 +1,12 @@
+import java.io.*;
+import java.nio.file.Paths;
+import java.nio.file.Files;
 
 class mpars {
 
-  public mpars() {
+  public mpars(String filename) {
     System.out.printf("mpars\n");
-    test();
+    test(filename);
   }
 
 /*
@@ -35,10 +38,10 @@ class mpars {
 
   static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7, T_PRINT=8;
   static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5;
-  static final int O_LT=0, O_PLUS=1, O_MULT=2, O_MINUS=3;
-  static final int F_cos=0, F_sin=1;
+  static final int O_LT=0, O_PLUS=1, O_MULT=2, O_MINUS=3, O_DIV=4;
+  static final int F_cos=0, F_sin=1, F_int=2;
 
-    int MAXPROG=1000;
+    int MAXPROG=10000;
     int MAXMEM=3000;
     int MAXSTK=100;
     int numobj=1000;
@@ -72,9 +75,9 @@ class mpars {
   boolean writeprog=true;
   
   int parse_mem(String s) {
-    try {
-      return strip_m(s,1);
-    } catch (java.lang.NumberFormatException e) {
+    //try {
+      //return strip_m(s,1); // old way - but breaks m1 type variables
+    //} catch (java.lang.NumberFormatException e) {
       // search for it in memory list
       int i;
       for (i=0; i<mp; ++i) if (s.equals(mem_str[i])) { 
@@ -82,13 +85,20 @@ class mpars {
         return i;
       }
       //throw java.lang.NumberFormatException;
+      System.out.printf("*** Could not find %s\n",s);
       return -1;
-    }
+    //}
   }
   int strip_m(String s, int start) {
     int x;
     x=Integer.parseInt(s.substring(start));
     //System.out.printf("x=%d\n",x);
+    return x;
+  }
+
+  double strip_double(String s, int start) {
+    double x;
+    x=Double.parseDouble(s.substring(start));
     return x;
   }
 
@@ -111,6 +121,7 @@ class mpars {
             if (writeprog && op=='+') { prog[pp]=T_PRF; progparam_mem[pp]=O_PLUS; pp++; }
             if (writeprog && op=='-') { prog[pp]=T_PRF; progparam_mem[pp]=O_MINUS; pp++; }
             if (writeprog && op=='*') { prog[pp]=T_PRF; progparam_mem[pp]=O_MULT; pp++; }
+            if (writeprog && op=='/') { prog[pp]=T_PRF; progparam_mem[pp]=O_DIV; pp++; }
         } else if (f==M_END) {
             System.out.printf("   %-8s : END\n","");
             if (writeprog) { prog[pp]=T_END; pp++; }
@@ -133,9 +144,12 @@ class mpars {
               // at the end, rewrite all the jumps and beqs
               progparam_str[pp]=new String(build); // for reconstruction
             }
-          } else if (m==M_NUM && f==M_NONE) {
+          } else if (m==M_NUM && f==M_NONE && false) {
             System.out.printf("   %-8s : PSH# %s\n","",build);
             if (writeprog) { prog[pp]=T_PSH|TM_IMM_I; progparam_i[pp]=strip_m(build,0); pp++; }
+          } else if (m==M_NUM && f==M_NONE) {
+            System.out.printf("   %-8s : PSH#D %s\n","",build);
+            if (writeprog) { prog[pp]=T_PSH|TM_IMM_D; progparam_d[pp]=strip_double(build,0); pp++; }
           } else if (m==M_VAR && f==M_JUMP) {
             System.out.printf("   %-8s : JMP %s\n","",build);
             //if (writeprog) { prog[pp]=T_JMP; progparam_mem[pp]=strip_m(build,1); pp++; }
@@ -158,6 +172,9 @@ class mpars {
             } else if (build.equals("cos")) {
               System.out.printf("   %-8s : FNC %s\n","",build);
               if (writeprog) { prog[pp]=T_FNC; progparam_mem[pp]=F_cos; pp++; }
+            } else if (build.equals("int")) {
+              System.out.printf("   %-8s : FNC %s\n","",build);
+              if (writeprog) { prog[pp]=T_FNC; progparam_mem[pp]=F_int; pp++; }
             } else {
               System.out.printf("   %-8s : PSH %s\n","",build);
               if (writeprog) { prog[pp]=T_PSH ; progparam_mem[pp]=parse_mem(build); pp++; }
@@ -196,7 +213,7 @@ class mpars {
         printinstr();
         continue;
       }
-      if (c=='.') {
+      if (c=='.' && m!=M_NUM) {
         printinstr();
         f=M_STORE;
         continue;
@@ -282,7 +299,14 @@ class mpars {
     }
   }
 
-  void test() {
+static String readFile(String path/*, Charset encoding*/) 
+  throws java.io.IOException 
+{
+  byte[] encoded = Files.readAllBytes(Paths.get(path));
+  return new String(encoded/*, encoding*/);
+}
+
+  void test(String filename) {
     int mem_i=mp++;
     int mem_j=mp++;
     int mem_iter=mp++;
@@ -405,7 +429,14 @@ class mpars {
     System.out.printf("--print-prog----------------------\n");
     print_prog(0);
     System.out.printf("\n-------------------------\n");
-    writeprog=true; assemble(assem);
+    writeprog=true; 
+
+    try {
+      //assem=readFile("tmp.a");
+      assem=readFile(filename);
+    } catch (Exception e) {
+    }
+    assemble(assem);
     System.out.printf("--print-prog----------------------\n");
     print_prog(0);
     System.out.printf("\n-------------------------\n");
@@ -426,16 +457,18 @@ class mpars {
         //}
         // rn sub program from start
         run_prog(0);
-         //System.out.printf("Total instructions = %d\n",ic);
 
       //}
       //System.out.printf("part=%f\n",mem[mem_v]);
     //}
     //System.out.printf("%f\n",mem[mem_v]);
 
-   // display values for comparison
-   for (memi[mem_j]=0; memi[mem_j]<numobj; ++memi[mem_j]) {
-      System.out.printf("  %d]%f\n",memi[mem_j],mem[mem_x+memi[mem_j]]);
+         System.out.printf("Total instructions = %d\n",ic);
+   if (false) {
+     // display values for comparison
+     for (memi[mem_j]=0; memi[mem_j]<numobj; ++memi[mem_j]) {
+        System.out.printf("  %d]%f\n",memi[mem_j],mem[mem_x+memi[mem_j]]);
+     }
    }
     
   }
@@ -445,14 +478,15 @@ class mpars {
 
   int run_prog(int pp) {
     int instr;
+    long tcount=0;
 
     mainloop:
     while(true) {
-      instr=prog[pp];
-      ic++;
+      //instr=prog[pp];
+      //ic++;
   //public enum ProgType { T_PSH, T_FNC, T_PRF, T_JMP, T_STO, T_END };
-      if (verbose>0) { System.out.printf("%06d Got instr =%d\n",pp,instr); }
-      switch (instr) {
+      //if (verbose>0) { System.out.printf("%06d Got instr =%d\n",pp,instr); }
+      switch (prog[pp]) {
         case T_PSH|TM_MEM:
             stk[sp]=progparam_mem[pp];
 						sp++;
@@ -475,7 +509,7 @@ class mpars {
           sp++;
           break;
         case T_PRINT:
-          System.out.printf("%f\n",mem[progparam_mem[pp]]);
+          System.out.printf("%.14f\n",mem[progparam_mem[pp]]);
           break;
         case T_PSH:
           stk[sp]=mem[progparam_mem[pp]];
@@ -489,35 +523,43 @@ class mpars {
             case F_cos:
               stk[sp-1]=Math.cos(stk[sp-1]);
               break;
+            case F_int:
+              stk[sp-1]=(int)(stk[sp-1]);
+              break;
           }
           break;
         case T_PRF:
              //static final int O_LT=0, O_PLUS=1, O_MULT=2;
-          if (verbose>0) { System.out.printf("  Performing op %d\n",progparam_mem[pp]); }
+          //if (verbose>0) { System.out.printf("  Performing op %d\n",progparam_mem[pp]); }
           switch (progparam_mem[pp]) {
             case O_LT:
-              if (verbose>0) { System.out.printf("%f < %f\n",stk[sp-2],stk[sp-1]); }
+              //if (verbose>0) { System.out.printf("%f < %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=(stk[sp-2]<stk[sp-1])?-1:0;
-              if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
+              //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
             case O_PLUS:
-              if (verbose>0) { System.out.printf(" %f + %f\n",stk[sp-2],stk[sp-1]); }
+              //if (verbose>0) { System.out.printf(" %f + %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=stk[sp-2]+stk[sp-1];
-              if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
+              //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
             case O_MINUS:
-              if (verbose>0) { System.out.printf(" %f - %f\n",stk[sp-2],stk[sp-1]); }
+              //if (verbose>0) { System.out.printf(" %f - %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=stk[sp-2]-stk[sp-1];
-              if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
+              //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
             case O_MULT:
-              if (verbose>0) { System.out.printf(" %f * %f\n",stk[sp-2],stk[sp-1]); }
+              //if (verbose>0) { System.out.printf(" %f * %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=stk[sp-2]*stk[sp-1];
-              if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
+              //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
+              break;
+            case O_DIV:
+              //if (verbose>0) { System.out.printf(" %f / %f\n",stk[sp-2],stk[sp-1]); }
+              stk[sp-2]=stk[sp-2]/stk[sp-1];
+              //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
           }
           sp--;
-          if (verbose>0) System.out.printf("  sp=%d\n",sp);
+          //if (verbose>0) System.out.printf("  sp=%d\n",sp);
           break;
         case T_BEQ:
           sp--;
@@ -530,13 +572,13 @@ class mpars {
           pp=progparam_mem[pp];
           continue mainloop;
         case T_STO | TM_MEMIND:
-          if (verbose>0) { System.out.printf("Storing IND %f\n",stk[sp-1]); }
+          //if (verbose>0) { System.out.printf("Storing IND %f\n",stk[sp-1]); }
           mem[(int)stk[sp-1]]=stk[sp-2];
           sp--;
           sp--;
           break;
         case T_STO:
-          if (verbose>0) { System.out.printf("Storing %f\n",stk[sp-1]); }
+          //if (verbose>0) { System.out.printf("Storing %f\n",stk[sp-1]); }
           mem[progparam_mem[pp]]=stk[sp-1];
           sp--;
           break;
@@ -544,15 +586,17 @@ class mpars {
           sp--;
           break;
         case T_END:
+          //System.out.printf("Tcount=%d\n",tcount);
           return 0;
       }
 
       pp++;
+      //tcount++;
     } /* mainloop */
   }
 
   int print_prog(int pp) {
-    int instr;
+    //int instr;
     boolean nc=false;
 
     mainloop:
@@ -574,9 +618,9 @@ class mpars {
           break;
         }
       }
-      instr=prog[pp];
-      ic++;
-      switch (instr) {
+      //instr=prog[pp];
+      //ic++;
+      switch (prog[pp]) {
         case T_PSH|TM_MEM:
           if (nc) System.out.printf(",");
           if (mem_str[progparam_mem[pp]] != null) {
@@ -632,6 +676,9 @@ class mpars {
             case F_cos:
               System.out.printf("cos");
               break;
+            case F_int:
+              System.out.printf("int");
+              break;
           }
           nc=true;
           break;
@@ -650,6 +697,9 @@ class mpars {
               break;
             case O_MULT:
               System.out.printf("*");
+              break;
+            case O_DIV:
+              System.out.printf("/");
               break;
           }
           nc=false;
@@ -679,9 +729,9 @@ class mpars {
         case T_STO:
           if (nc) System.out.printf(" ");
           if (mem_str[progparam_mem[pp]] != null) {
-            System.out.printf(".%s",mem_str[progparam_mem[pp]]);
+            System.out.printf(".%s\n",mem_str[progparam_mem[pp]]);
           } else {
-            System.out.printf(".m%d",progparam_mem[pp]);
+            System.out.printf(".m%d\n",progparam_mem[pp]);
           }
           nc=true;
           break;
@@ -700,7 +750,7 @@ class mpars {
   }
 
   public static void main(String args[]) {
-    new mpars();
+    new mpars(args[0]);
   }
 
 }
