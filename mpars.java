@@ -463,7 +463,7 @@ static String readFile(String path/*, Charset encoding*/)
     //}
     //System.out.printf("%f\n",mem[mem_v]);
 
-         System.out.printf("Total instructions = %d\n",ic);
+   System.out.printf("Total instructions = %d (if enabled)\n",ic);
    if (false) {
      // display values for comparison
      for (memi[mem_j]=0; memi[mem_j]<numobj; ++memi[mem_j]) {
@@ -477,44 +477,31 @@ static String readFile(String path/*, Charset encoding*/)
   int ic=0;
 
   int run_prog(int pp) {
-    int instr;
-    long tcount=0;
+    //int instr;
 
     mainloop:
     while(true) {
       //instr=prog[pp];
       //ic++;
-  //public enum ProgType { T_PSH, T_FNC, T_PRF, T_JMP, T_STO, T_END };
-      //if (verbose>0) { System.out.printf("%06d Got instr =%d\n",pp,instr); }
+                                                                             //if (verbose>0) { System.out.printf("%06d Got instr =%d\n",pp,instr); }
       switch (prog[pp]) {
-        case T_PSH|TM_MEM:
-            stk[sp]=progparam_mem[pp];
-						sp++;
-				  break;
-        case T_FNC|TM_MEMIND:
-            stk[sp-1]=mem[(int)stk[sp-1]];
-				  break;
+        case T_PSH|TM_IMM_D:
+          /* immediate d*/
+          stk[sp++]=progparam_d[pp];
+          break;
+        case T_PSH:
+          stk[sp++]=mem[progparam_mem[pp]];
+          break;
         case T_PSH|TM_INT:
-          stk[sp]=memi[progparam_mem[pp]];
-				  sp++;
+          stk[sp++]=memi[progparam_mem[pp]];
 				  break;
         case T_PSH|TM_IMM_I:
           /* immediate int */
-          stk[sp]=progparam_i[pp];
-          sp++;
+          stk[sp++]=progparam_i[pp];
           break;
-        case T_PSH|TM_IMM_D:
-          /* immediate d*/
-          stk[sp]=progparam_d[pp];
-          sp++;
-          break;
-        case T_PRINT:
-          System.out.printf("%.14f\n",mem[progparam_mem[pp]]);
-          break;
-        case T_PSH:
-          stk[sp]=mem[progparam_mem[pp]];
-          sp++;
-          break;
+        case T_PSH|TM_MEM:
+          stk[sp++]=progparam_mem[pp];
+				  break;
         case T_FNC:
           switch (progparam_mem[pp]) {
             case F_sin:
@@ -528,38 +515,35 @@ static String readFile(String path/*, Charset encoding*/)
               break;
           }
           break;
+        case T_FNC|TM_MEMIND:
+            stk[sp-1]=mem[(int)stk[sp-1]];
+				  break;
         case T_PRF:
-             //static final int O_LT=0, O_PLUS=1, O_MULT=2;
-          //if (verbose>0) { System.out.printf("  Performing op %d\n",progparam_mem[pp]); }
+                                                                //if (verbose>0) { System.out.printf("%f %d %f\n",stk[sp-2],progparam_mem[pp],stk[sp-1]); }
           switch (progparam_mem[pp]) {
             case O_LT:
-              //if (verbose>0) { System.out.printf("%f < %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=(stk[sp-2]<stk[sp-1])?-1:0;
-              //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
             case O_PLUS:
-              //if (verbose>0) { System.out.printf(" %f + %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=stk[sp-2]+stk[sp-1];
-              //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
             case O_MINUS:
-              //if (verbose>0) { System.out.printf(" %f - %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=stk[sp-2]-stk[sp-1];
-              //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
             case O_MULT:
-              //if (verbose>0) { System.out.printf(" %f * %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=stk[sp-2]*stk[sp-1];
-              //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
             case O_DIV:
-              //if (verbose>0) { System.out.printf(" %f / %f\n",stk[sp-2],stk[sp-1]); }
               stk[sp-2]=stk[sp-2]/stk[sp-1];
-              //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-2]); }
               break;
           }
           sp--;
-          //if (verbose>0) System.out.printf("  sp=%d\n",sp);
+                                                                //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-1]); }
+          break;
+        case T_STO:
+                                                                //if (verbose>0) { System.out.printf("Storing %f\n",stk[sp-1]); }
+          mem[progparam_mem[pp]]=stk[sp-1];
+          sp--;
           break;
         case T_BEQ:
           sp--;
@@ -572,26 +556,22 @@ static String readFile(String path/*, Charset encoding*/)
           pp=progparam_mem[pp];
           continue mainloop;
         case T_STO | TM_MEMIND:
-          //if (verbose>0) { System.out.printf("Storing IND %f\n",stk[sp-1]); }
+                                                                //if (verbose>0) { System.out.printf("Storing IND %f\n",stk[sp-1]); }
           mem[(int)stk[sp-1]]=stk[sp-2];
           sp--;
-          sp--;
-          break;
-        case T_STO:
-          //if (verbose>0) { System.out.printf("Storing %f\n",stk[sp-1]); }
-          mem[progparam_mem[pp]]=stk[sp-1];
           sp--;
           break;
         case T_POP:
           sp--;
           break;
+        case T_PRINT:
+          System.out.printf("%.14f\n",mem[progparam_mem[pp]]);
+          break;
         case T_END:
-          //System.out.printf("Tcount=%d\n",tcount);
+                                                                //System.out.printf("Tcount=%d\n",tcount);
           return 0;
       }
-
       pp++;
-      //tcount++;
     } /* mainloop */
   }
 
