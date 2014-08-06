@@ -37,7 +37,7 @@ class mpars {
     ":LK_ v~##\n";
 
   static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7, T_PRINT=8;
-  static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5;
+  static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5, TM_PC=6<<5;
   static final int O_LT=0, O_PLUS=1, O_MULT=2, O_MINUS=3, O_DIV=4;
   static final int F_cos=0, F_sin=1, F_int=2;
 
@@ -564,6 +564,13 @@ static String readFile(String path/*, Charset encoding*/)
           break;
         case T_POP:
           sp--;
+          break;
+        case T_STO | TM_PC:
+          pp=(int)stk[sp-1]; // this will increment at the end of loop
+          sp--;
+          break;
+        case T_PSH | TM_PC:
+          stk[sp++]=pp;
           break;
         case T_PRINT:
           System.out.printf("%.14f\n",mem[progparam_mem[pp]]);
