@@ -12,7 +12,7 @@ class mpl0run {
   String mpl0source = "";
 
   static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7, T_PRINT=8;
-  static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5;
+  static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5, TM_PC=6<<5;
   static final int O_LT=0, O_PLUS=1, O_MULT=2, O_MINUS=3, O_DIV=4;
   static final int F_cos=0, F_sin=1, F_int=2;
 
@@ -31,7 +31,7 @@ class mpl0run {
     String progparam_str[]=new String[MAXPROG]; 
     String mem_str[]=new String[MAXMEM]; 
     
-    static final int M_NONE=0, M_VAR=1, M_NUM=2, M_STORE=3, M_LABEL=4, M_ADDR=5, M_OP=6, M_READADDR=7, M_JUMP=8, M_BRANCH=9, M_STOADDR=10, M_PRINT=11, M_END=12, M_MEMORY=13,M_E=14;
+    static final int M_NONE=0, M_VAR=1, M_NUM=2, M_STORE=3, M_LABEL=4, M_ADDR=5, M_OP=6, M_READADDR=7, M_JUMP=8, M_BRANCH=9, M_STOADDR=10, M_PRINT=11, M_END=12, M_MEMORY=13,M_E=14,M_POP=15;
     int f=M_NONE;
     int m=M_NONE;
     String build="";
@@ -87,6 +87,9 @@ class mpl0run {
             if (writeprog && op=='-') { prog[pp]=T_PRF; progparam_mem[pp]=O_MINUS; pp++; }
             if (writeprog && op=='*') { prog[pp]=T_PRF; progparam_mem[pp]=O_MULT; pp++; }
             if (writeprog && op=='/') { prog[pp]=T_PRF; progparam_mem[pp]=O_DIV; pp++; }
+        } else if (f==M_POP) {
+            System.out.printf("   %-8s : POP\n","");
+            if (writeprog) { prog[pp]=T_POP; pp++; }
         } else if (f==M_END) {
             System.out.printf("   %-8s : END\n","");
             if (writeprog) { prog[pp]=T_END; pp++; }
@@ -119,6 +122,10 @@ class mpl0run {
             System.out.printf("   %-8s : JMP %s\n","",build);
             //if (writeprog) { prog[pp]=T_JMP; progparam_mem[pp]=strip_m(build,1); pp++; }
             if (writeprog) { prog[pp]=T_JMP; progparam_mem[pp]=-1; progparam_str[pp]=new String(build); pp++; }
+          } else if (m==M_NUM && f==M_BRANCH) {
+            System.out.printf("   %-8s : BEQ %+d\n","",strip_m(build,0));
+            //if (writeprog) { prog[pp]=T_BEQ; progparam_mem[pp]=strip_m(build,1); pp++; }
+            if (writeprog) { prog[pp]=T_BEQ; progparam_mem[pp]=pp+strip_m(build,0); pp++; }
           } else if (m==M_VAR && f==M_BRANCH) {
             System.out.printf("   %-8s : BEQ %s\n","",build);
             //if (writeprog) { prog[pp]=T_BEQ; progparam_mem[pp]=strip_m(build,1); pp++; }
@@ -128,7 +135,7 @@ class mpl0run {
             if (writeprog) { prog[pp]=T_PSH | TM_MEM ; progparam_mem[pp]=parse_mem(build); pp++; }
           } else if (m==M_VAR && f==M_STORE) {
             System.out.printf("   %-8s : STO %s\n","",build);
-            if (writeprog) { prog[pp]=T_STO; progparam_mem[pp]=parse_mem(build); pp++; }
+            if (writeprog) { prog[pp]=T_STO | (parse_mem(build)==0?TM_PC:0); progparam_mem[pp]=parse_mem(build); pp++; }
           } else if (m==M_VAR && f==M_NONE) {
             // check for functions
             if (build.equals("sin")) {
@@ -142,7 +149,7 @@ class mpl0run {
               if (writeprog) { prog[pp]=T_FNC; progparam_mem[pp]=F_int; pp++; }
             } else {
               System.out.printf("   %-8s : PSH %s\n","",build);
-              if (writeprog) { prog[pp]=T_PSH ; progparam_mem[pp]=parse_mem(build); pp++; }
+              if (writeprog) { prog[pp]=T_PSH | (parse_mem(build)==0?TM_PC:0) ; progparam_mem[pp]=parse_mem(build); pp++; }
             }
           }
         }
@@ -161,6 +168,8 @@ class mpl0run {
            pp=0;
            mp=0;
         }
+        // if implicit PC in memory 0
+        if (writeprog) { mem_str[mp]="PC"; mp++; }
     for(char c : s.toCharArray()) {
       // process c
       if (c==' ' || c=='\n' || c=='\r' || c==',') {
@@ -174,9 +183,23 @@ class mpl0run {
         printinstr();
         continue;
       }
+      if (c=='^') {
+   System.out.printf("***********got HAT ^\n");
+        build="PC";
+        m=M_VAR;
+        printinstr();
+        continue;
+      }
       if (c=='@') {
         printinstr();
         f=M_READADDR;
+        printinstr();
+        continue;
+      }
+      if (c=='.' && f==M_STORE) {
+   System.out.printf("***********got double dot\n");
+        //build="PC";
+        f=M_POP;
         printinstr();
         continue;
       }
@@ -254,7 +277,7 @@ class mpl0run {
       int p;
       // perform label substitions
       for (p=0; p<pp; ++p) {
-        if (prog[p]==T_JMP || prog[p]==T_BEQ) {
+        if ((prog[p]==T_JMP || prog[p]==T_BEQ) && progparam_mem[p]==-1 ) {
           for (i=0; i<labeltop; ++i) {
             if (labelstr[i].equals(progparam_str[p])) {
               //System.out.printf("Found label %s at location %d\n",labelstr[i],labelint[i]);
@@ -392,6 +415,13 @@ static String readFile(String path/*, Charset encoding*/)
           mem[(int)stk[sp-1]]=stk[sp-2];
           sp--;
           sp--;
+          break;
+        case T_STO | TM_PC:
+          pp=(int)stk[sp-1];
+          sp--;
+          break;
+        case T_PSH | TM_PC:
+          stk[sp++]=pp;
           break;
         case T_POP:
           sp--;
@@ -548,8 +578,21 @@ static String readFile(String path/*, Charset encoding*/)
           }
           nc=true;
           break;
+        case T_PSH | TM_PC:
+          if (nc) System.out.printf(" ");
+          //System.out.printf("\nPC\n");
+          System.out.printf("\n^\n");
+          nc=false;
+          break;
+        case T_STO | TM_PC:
+          if (nc) System.out.printf(" ");
+          //System.out.printf(".PC\n");
+          System.out.printf(".^\n");
+          nc=false;
+          break;
         case T_POP:
-          System.out.printf("!");
+          //System.out.printf("!");
+          System.out.printf("..");
           nc=false;
           break;
         case T_END:
