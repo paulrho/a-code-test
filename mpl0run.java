@@ -26,7 +26,7 @@ class mpl0run {
     int progparam_mem[]=new int[MAXPROG]; 
     double mem[]=new double[MAXMEM];    int mp=0;
     int memi[]=new int[MAXMEM];   
-    double stk[]=new double[MAXSTK]; int sp=0;
+    double stk[]=new double[MAXSTK]; int sp=-1;
 // only for parsing
     String progparam_str[]=new String[MAXPROG]; 
     String mem_str[]=new String[MAXMEM]; 
@@ -342,7 +342,7 @@ static String readFile(String path/*, Charset encoding*/)
       switch (prog[pp]) {
         case T_PSH|TM_IMM_D:
           /* immediate d*/
-          stk[sp++]=progparam_d[pp++];
+          stk[++sp]=progparam_d[pp++];
           continue mainloop;
       //88: aload_0       
       //89: getfield      #16                 // Field stk:[D
@@ -362,51 +362,51 @@ static String readFile(String path/*, Charset encoding*/)
      //113: goto          0
 
         case T_PSH:
-          stk[sp++]=mem[progparam_mem[pp++]];
+          stk[++sp]=mem[progparam_mem[pp++]];
           continue mainloop;
         case T_PSH|TM_INT:
-          stk[sp++]=memi[progparam_mem[pp++]];
+          stk[++sp]=memi[progparam_mem[pp++]];
           continue mainloop;
         case T_PSH|TM_IMM_I:
           /* immediate int */
-          stk[sp++]=progparam_i[pp++];
+          stk[++sp]=progparam_i[pp++];
           continue mainloop;
         case T_PSH|TM_MEM:
-          stk[sp++]=progparam_mem[pp++];
+          stk[++sp]=progparam_mem[pp++];
           continue mainloop;
         case T_FNC:
           switch (progparam_mem[pp++]) {
             case F_sin:
-              stk[sp-1]=Math.sin(stk[sp-1]);
+              stk[sp]=Math.sin(stk[sp]);
               break;
             case F_cos:
-              stk[sp-1]=Math.cos(stk[sp-1]);
+              stk[sp]=Math.cos(stk[sp]);
               break;
             case F_int:
-              stk[sp-1]=(int)(stk[sp-1]);
+              stk[sp]=(int)(stk[sp]);
               break;
           }
           continue mainloop;
         case T_FNC|TM_MEMIND:
-            stk[sp-1]=mem[(int)stk[sp-1]];
+            stk[sp]=mem[(int)stk[sp]];
 				  break;
         case T_PRF:
                                                                 //if (verbose>0) { System.out.printf("%f %d %f\n",stk[sp-2],progparam_mem[pp],stk[sp-1]); }
           switch (progparam_mem[pp++]) {
             case O_LT:
-              stk[sp-2]=(stk[sp-2]<stk[--sp])?-1:0;
+              stk[sp-1]=(stk[sp-1]<stk[sp--])?-1:0;
               break;
             case O_PLUS:
-              stk[sp-2]+=stk[--sp];
+              stk[sp-1]+=stk[sp--];
               break;
             case O_MINUS:
-              stk[sp-2]-=stk[--sp];
+              stk[sp-1]-=stk[sp--];
               break;
             case O_MULT:
-              stk[sp-2]*=stk[--sp];
+              stk[sp-1]*=stk[sp--];
               break;
             case O_DIV:
-              stk[sp-2]/=stk[--sp];
+              stk[sp-1]/=stk[sp--];
               break;
           }
           //sp--;
@@ -414,12 +414,12 @@ static String readFile(String path/*, Charset encoding*/)
           continue mainloop;
         case T_STO:
                                                                 //if (verbose>0) { System.out.printf("Storing %f\n",stk[sp-1]); }
-          mem[progparam_mem[pp++]]=stk[--sp];
+          mem[progparam_mem[pp++]]=stk[sp--];
           //sp--;
           continue mainloop;
         case T_BEQ:
           //sp--;
-          if (stk[--sp]==0) {
+          if (stk[sp--]==0) {
             pp=progparam_mem[pp];
             continue mainloop;
           }
@@ -429,16 +429,15 @@ static String readFile(String path/*, Charset encoding*/)
           continue mainloop;
         case T_STO | TM_MEMIND:
                                                                 //if (verbose>0) { System.out.printf("Storing IND %f\n",stk[sp-1]); }
-          //mem[(int)stk[sp-1]]=stk[sp-2];
-          mem[(int)stk[--sp]]=stk[--sp];
-          //sp--;
-          //sp--;
+          mem[(int)stk[sp]]=stk[sp-1];
+          sp--;
+          sp--;
           break;
         case T_STO | TM_PC:
-          pp=(int)stk[--sp]+1;
+          pp=(int)stk[sp--]+1;
           continue mainloop;
         case T_PSH | TM_PC:
-          stk[sp++]=pp++;
+          stk[++sp]=pp++;
           continue mainloop;
         case T_POP:
           sp--;
