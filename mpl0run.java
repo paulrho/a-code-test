@@ -11,8 +11,8 @@ class mpl0run {
 
   String mpl0source = "";
 
-  static final int T_PSH=0, T_FNC=1, T_PRF=2, T_JMP=3, T_STO=4, T_END=5, T_POP=6, T_BEQ=7, T_PRINT=8;
-  static final int TM_MEM=1<<5, TM_MEMIND=2<<5, TM_INT=3<<5, TM_IMM_I=4<<5, TM_IMM_D=5<<5, TM_PC=6<<5;
+  static final int T_PSH=0, T_PRF=6, T_END=7, T_STO=8, T_JMP=11, T_FNC=12, T_POP=14, T_BEQ=15, T_PRINT=16;
+  static final int TM_MEM=1, TM_MEMIND=1, TM_INT=5, TM_IMM_I=3, TM_IMM_D=4, TM_PC=2;
   static final int O_LT=0, O_PLUS=1, O_MULT=2, O_MINUS=3, O_DIV=4;
   static final int F_cos=0, F_sin=1, F_int=2;
 
@@ -342,67 +342,84 @@ static String readFile(String path/*, Charset encoding*/)
       switch (prog[pp]) {
         case T_PSH|TM_IMM_D:
           /* immediate d*/
-          stk[sp++]=progparam_d[pp];
-          break;
+          stk[sp++]=progparam_d[pp++];
+          continue mainloop;
+      //88: aload_0       
+      //89: getfield      #16                 // Field stk:[D
+      //92: aload_0       
+      //93: dup           
+      //94: getfield      #17                 // Field sp:I
+      //97: dup_x1        
+      //98: iconst_1      
+      //99: iadd          
+     //100: putfield      #17                 // Field sp:I
+     //103: aload_0       
+     //104: getfield      #10                 // Field progparam_d:[D
+     //107: iload_1       
+     //108: iinc          1, 1
+     //111: daload        
+     //112: dastore       
+     //113: goto          0
+
         case T_PSH:
-          stk[sp++]=mem[progparam_mem[pp]];
-          break;
+          stk[++sp]=mem[progparam_mem[pp++]];
+          continue mainloop;
         case T_PSH|TM_INT:
-          stk[sp++]=memi[progparam_mem[pp]];
-				  break;
+          stk[++sp]=memi[progparam_mem[pp++]];
+          continue mainloop;
         case T_PSH|TM_IMM_I:
           /* immediate int */
-          stk[sp++]=progparam_i[pp];
-          break;
+          stk[++sp]=progparam_i[pp++];
+          continue mainloop;
         case T_PSH|TM_MEM:
-          stk[sp++]=progparam_mem[pp];
-				  break;
+          stk[++sp]=progparam_mem[pp++];
+          continue mainloop;
         case T_FNC:
-          switch (progparam_mem[pp]) {
+          switch (progparam_mem[pp++]) {
             case F_sin:
-              stk[sp-1]=Math.sin(stk[sp-1]);
+              stk[sp]=Math.sin(stk[sp]);
               break;
             case F_cos:
-              stk[sp-1]=Math.cos(stk[sp-1]);
+              stk[sp]=Math.cos(stk[sp]);
               break;
             case F_int:
-              stk[sp-1]=(int)(stk[sp-1]);
+              stk[sp]=(int)(stk[sp]);
               break;
           }
-          break;
+          continue mainloop;
         case T_FNC|TM_MEMIND:
-            stk[sp-1]=mem[(int)stk[sp-1]];
+            stk[sp]=mem[(int)stk[sp]];
 				  break;
         case T_PRF:
                                                                 //if (verbose>0) { System.out.printf("%f %d %f\n",stk[sp-2],progparam_mem[pp],stk[sp-1]); }
-          switch (progparam_mem[pp]) {
+          switch (progparam_mem[pp++]) {
             case O_LT:
-              stk[sp-2]=(stk[sp-2]<stk[sp-1])?-1:0;
+              stk[sp-1]=(stk[sp-1]<stk[sp--])?-1:0;
               break;
             case O_PLUS:
-              stk[sp-2]=stk[sp-2]+stk[sp-1];
+              stk[sp-1]+=stk[sp--];
               break;
             case O_MINUS:
-              stk[sp-2]=stk[sp-2]-stk[sp-1];
+              stk[sp-1]-=stk[sp--];
               break;
             case O_MULT:
-              stk[sp-2]=stk[sp-2]*stk[sp-1];
+              stk[sp-1]*=stk[sp--];
               break;
             case O_DIV:
-              stk[sp-2]=stk[sp-2]/stk[sp-1];
+              stk[sp-1]/=stk[sp--];
               break;
           }
-          sp--;
+          //sp--;
                                                                 //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-1]); }
-          break;
+          continue mainloop;
         case T_STO:
                                                                 //if (verbose>0) { System.out.printf("Storing %f\n",stk[sp-1]); }
-          mem[progparam_mem[pp]]=stk[sp-1];
-          sp--;
-          break;
+          mem[progparam_mem[pp++]]=stk[sp--];
+          //sp--;
+          continue mainloop;
         case T_BEQ:
-          sp--;
-          if (stk[sp]==0) {
+          //sp--;
+          if (stk[sp--]==0) {
             pp=progparam_mem[pp];
             continue mainloop;
           }
@@ -412,17 +429,16 @@ static String readFile(String path/*, Charset encoding*/)
           continue mainloop;
         case T_STO | TM_MEMIND:
                                                                 //if (verbose>0) { System.out.printf("Storing IND %f\n",stk[sp-1]); }
-          mem[(int)stk[sp-1]]=stk[sp-2];
+          mem[(int)stk[sp]]=stk[sp-1];
           sp--;
           sp--;
           break;
         case T_STO | TM_PC:
-          pp=(int)stk[sp-1];
-          sp--;
-          break;
+          pp=(int)stk[sp--]+1;
+          continue mainloop;
         case T_PSH | TM_PC:
-          stk[sp++]=pp;
-          break;
+          stk[++sp]=pp++;
+          continue mainloop;
         case T_POP:
           sp--;
           break;
