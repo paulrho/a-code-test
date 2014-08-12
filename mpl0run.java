@@ -26,7 +26,7 @@ class mpl0run {
     int progparam_mem[]=new int[MAXPROG]; 
     double mem[]=new double[MAXMEM];    int mp=0;
     int memi[]=new int[MAXMEM];   
-    double stk[]=new double[MAXSTK]; int sp=-1;
+    double stk[]=new double[MAXSTK]; int sp=0;
 // only for parsing
     String progparam_str[]=new String[MAXPROG]; 
     String mem_str[]=new String[MAXMEM]; 
@@ -336,117 +336,39 @@ static String readFile(String path/*, Charset encoding*/)
 
     mainloop:
     while(true) {
-      //instr=prog[pp];
-      //ic++;
-                                                                             //if (verbose>0) { System.out.printf("%06d Got instr =%d\n",pp,instr); }
       switch (prog[pp]) {
-        case T_PSH|TM_IMM_D:
-          /* immediate d*/
-          stk[++sp]=progparam_d[pp++];
-          continue mainloop;
-      //88: aload_0       
-      //89: getfield      #16                 // Field stk:[D
-      //92: aload_0       
-      //93: dup           
-      //94: getfield      #17                 // Field sp:I
-      //97: dup_x1        
-      //98: iconst_1      
-      //99: iadd          
-     //100: putfield      #17                 // Field sp:I
-     //103: aload_0       
-     //104: getfield      #10                 // Field progparam_d:[D
-     //107: iload_1       
-     //108: iinc          1, 1
-     //111: daload        
-     //112: dastore       
-     //113: goto          0
-
-        case T_PSH:
-          stk[++sp]=mem[progparam_mem[pp++]];
-          continue mainloop;
-        case T_PSH|TM_INT:
-          stk[++sp]=memi[progparam_mem[pp++]];
-          continue mainloop;
-        case T_PSH|TM_IMM_I:
-          /* immediate int */
-          stk[++sp]=progparam_i[pp++];
-          continue mainloop;
-        case T_PSH|TM_MEM:
-          stk[++sp]=progparam_mem[pp++];
-          continue mainloop;
+        case T_PSH|TM_IMM_D:  stk[sp++]=progparam_d[pp++];          continue mainloop;
+        case T_PSH:           stk[sp++]=mem[progparam_mem[pp++]];   continue mainloop;
+        case T_PSH|TM_INT:    stk[sp++]=memi[progparam_mem[pp++]];  continue mainloop;
+        case T_PSH|TM_IMM_I:  stk[sp++]=progparam_i[pp++];          continue mainloop;
+        case T_PSH|TM_MEM:    stk[sp++]=progparam_mem[pp++];        continue mainloop;
+        case T_FNC|TM_MEMIND: stk[sp-1]=mem[(int)stk[sp-1]];        break;
         case T_FNC:
           switch (progparam_mem[pp++]) {
-            case F_sin:
-              stk[sp]=Math.sin(stk[sp]);
-              break;
-            case F_cos:
-              stk[sp]=Math.cos(stk[sp]);
-              break;
-            case F_int:
-              stk[sp]=(int)(stk[sp]);
-              break;
+            case F_sin: stk[sp-1]=Math.sin(stk[sp-1]);              break;
+            case F_cos: stk[sp-1]=Math.cos(stk[sp-1]);              break;
+            case F_int: stk[sp-1]=(int)(stk[sp-1]);                 break;
           }
           continue mainloop;
-        case T_FNC|TM_MEMIND:
-            stk[sp]=mem[(int)stk[sp]];
-				  break;
         case T_PRF:
-                                                                //if (verbose>0) { System.out.printf("%f %d %f\n",stk[sp-2],progparam_mem[pp],stk[sp-1]); }
           switch (progparam_mem[pp++]) {
-            case O_LT:
-              stk[sp-1]=(stk[sp-1]<stk[sp--])?-1:0;
-              break;
-            case O_PLUS:
-              stk[sp-1]+=stk[sp--];
-              break;
-            case O_MINUS:
-              stk[sp-1]-=stk[sp--];
-              break;
-            case O_MULT:
-              stk[sp-1]*=stk[sp--];
-              break;
-            case O_DIV:
-              stk[sp-1]/=stk[sp--];
-              break;
+            case O_LT:    stk[sp-2]=(stk[sp-2]<stk[--sp])?-1:0;     break;
+            case O_PLUS:  stk[sp-2]+=stk[--sp];                     break;
+            case O_MINUS: stk[sp-2]-=stk[--sp];                     break;
+            case O_MULT:  stk[sp-2]*=stk[--sp];                     break;
+            case O_DIV:   stk[sp-2]/=stk[--sp];                     break;
           }
-          //sp--;
-                                                                //if (verbose>0) { System.out.printf(" = %f\n",stk[sp-1]); }
           continue mainloop;
-        case T_STO:
-                                                                //if (verbose>0) { System.out.printf("Storing %f\n",stk[sp-1]); }
-          mem[progparam_mem[pp++]]=stk[sp--];
-          //sp--;
-          continue mainloop;
-        case T_BEQ:
-          //sp--;
-          if (stk[sp--]==0) {
-            pp=progparam_mem[pp];
-            continue mainloop;
-          }
-          break;
-        case T_JMP:
-          pp=progparam_mem[pp];
-          continue mainloop;
-        case T_STO | TM_MEMIND:
-                                                                //if (verbose>0) { System.out.printf("Storing IND %f\n",stk[sp-1]); }
-          mem[(int)stk[sp]]=stk[sp-1];
-          sp--;
-          sp--;
-          break;
-        case T_STO | TM_PC:
-          pp=(int)stk[sp--]+1;
-          continue mainloop;
-        case T_PSH | TM_PC:
-          stk[++sp]=pp++;
-          continue mainloop;
-        case T_POP:
-          sp--;
-          break;
-        case T_PRINT:
-          System.out.printf("%.14f\n",mem[progparam_mem[pp]]);
-          break;
+        case T_STO:             mem[progparam_mem[pp++]]=stk[--sp]; continue mainloop;
+        case T_STO | TM_MEMIND: mem[(int)stk[--sp]]=stk[--sp];      break;
+        case T_STO | TM_PC:     pp=(int)stk[--sp]+1;                continue mainloop;
+        case T_PSH | TM_PC:     stk[sp++]=pp++;                     continue mainloop;
+        case T_BEQ:             if (stk[--sp]==0) { pp=progparam_mem[pp]; continue mainloop; } 
+                                break;
+        case T_JMP:             pp=progparam_mem[pp];               continue mainloop;
+        case T_POP:             sp--;                               break;
+        case T_PRINT:           System.out.printf("%.14f\n",mem[progparam_mem[pp]]); break;
         case T_END:
-                                                                //System.out.printf("Tcount=%d\n",tcount);
           return 0;
       }
       pp++;
