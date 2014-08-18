@@ -1,0 +1,24 @@
+:i=1:j=1:k=1
+:v=1
+:x=1000
+:y=1000
+
+0 .i :Li
+  57,i+x'i+.&
+  57,i-y'i+.&
+i,999<?Li_,i,1+.i#Li:Li_
+
+0 .k
+:LK 0 .i
+  :LI v,i,sin+.v,0 .j
+    :LJ x'j+@v,j,cos*+x'j+.&
+      y'j+@v,j,sin*+y'j+.&
+      j,999<?LJ_,j,1+.j#LJ
+    :LJ_ i,999<?LI_,i,1+.i#LI
+  :LI_ v~k,99<?LK_,k,1+.k#LK
+:LK_ v~
+0 .j
+:Lj x'j+@.v,v~
+  j,999<?Lj_,j,1+.j#Lj
+:Lj_
+##
