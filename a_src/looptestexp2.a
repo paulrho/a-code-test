@@ -1,0 +1,32 @@
+#--- not compilable yet - experimenting with syntax
+#--- {   stacked label #AUnnn
+#---    #^   jump to #AUnnn
+#---    #_   jump to #AUnnn_
+#--- }   unstack the label #AUnnn_
+#--- with syntactic sugar of () condition
+#--- and defining size with () instead
+#--- maybe more syntactic sugar i,1+.i  same as i++  (breaks the whole paradigm though)
+#---  unless a new instruction INC var (by 1)
+#--- more syntactic sugar xxx?_  with underscore after it means the same as ?#_  
+:i(1):j(1):k(1)
+:v(1)
+:x(1000)
+:y(1000)
+
+0 .i {
+  57,i+x'i+.&
+  57,i-y'i+.&
+} (i,999<?_ i++)
+
+0 .k
+{ 0 .i
+  { v,i,sin+.v,0 .j
+    { x'j+@v,j,cos*+x'j+.&
+      y'j+@v,j,sin*+y'j+.&
+    } (j,999<?_ j++)
+  } (i,999<?_ i++)
+  v~
+} (k,99<?_ k++)
+v~
+0 .j { x'j+@.v,v~ } (j,999<?_ j++)
+##
