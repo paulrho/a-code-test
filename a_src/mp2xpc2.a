@@ -1,0 +1,140 @@
+:mathpi=1
+:dt=1 :au=1 :jd=1 :t=1 :t2=1 
+:m1=1 :m2=1 :m3=1 :m4=1 :m5=1 :m6=1
+:q=1 :ml=1 :ms=1 :md=1 :me=1 :mf=1 :na=1 :a=1 
+:s1=1 :s2=1 :s3=1 :s4=1 
+:b=1 :c=1 :e=1 :e2=1 :l=1
+:mm=1 :tp=1 :g=1 :w1=1 :w2=1 :bm=1 :pm=1 :r=1 
+:i=1
+
+3.141592654 .mathpi
+180.0,mathpi/.dt
+1.0 .au
+2450000.0 .jd
+jd,2415020.0-.jd
+
+0.i
+^1-
+  jd,36525.0/.t
+  t,t*.t2
+  27.32158213 .m1
+  365.2596407 .m2
+  27.55455094 .m3
+  29.53058868 .m4
+  27.21222039 .m5
+  6798.363307 .m6
+  jd.q
+  q,m1/.m1 q,m2/.m2 q,m3/.m3 q,m4/.m4 q,m5/.m5 q,m6/.m6
+  360.0,m1,m1,int-*.m1 360.0,m2,m2,int-*.m2 360.0,m3,m3,int-*.m3 360.0,m4,m4,int-*.m4 360.0,m5,m5,int-*.m5 360.0,m6,m6,int-*.m6
+  270.434164,m1+0.001133,0.0000019,t*-t2*-.ml
+  358.475833,m2+0.00015,0.0000033,t*+t2*-.ms
+  296.104608,m3+0.009192,0.0000144,t*+t2*+.md
+  350.737486,m4+0.001436,0.0000019,t*-t2*-.me
+  11.250889000,m5+0.003211,0.0000003,t*+t2*-.mf
+  259.183275,m6-0.002078,0.0000022,t*+t2*+.na
+  51.20,20.20,t*+dt/.a
+  a,sin.s1
+  na,dt/sin.s2
+  346.56,132.87,0.0091731,t*-t*+.b
+  0.003964,b,dt/sin*.s3
+  na,275.05+2.3,t*-dt/.c
+  c,sin.s4
+  ml,0.000233,s1*+s3+0.001964,s2*+.ml
+  ms,0.001778,s1*-.ms
+  md,0.000817,s1*+s3+0.002541,s2*+.md
+  mf,s3+0.024691,s2*-0.004328,s4*-.mf
+  me,0.002011,s1*+s3+0.001964,s2*+.me
+  1.0,0.002495,0.00000752,t*+t*-.e
+  e,e*.e2
+  ml,dt/.ml ms,dt/.ms na,dt/.na me,dt/.me mf,dt/.mf md,dt/.md
+  6.28875,md,sin*1.274018,2,me*md-sin*+
+    0.658309,2,me*sin*+0.213616,2,md*sin*+
+    e,0.185596*ms,sin*-0.114336,2,mf*sin*-
+    0.058793,2,me,md-*sin*+
+    0.057212,e*2,me*ms-md-sin*+0.05332,2,me*md+sin*+
+    0.045874,e*2,me*ms-sin*+0.041024,e*md,ms-sin*+
+    0.034718,me,sin*-e,0.030465*ms,md+sin*-
+    0.015326,2,me,mf-*sin*+0.012528,2,mf*md+sin*-
+    0.01098,2,mf*md-sin*-0.010674,4,me*md-sin*+
+    0.010034,3,md*sin*+0.008548,4,me*2,md*-sin*+
+    e,0.00791*ms,md-2,me*+sin*-e,0.006783*2,me*ms+sin*-
+    0.005162,md,me-sin*+e,0.005*ms,me+sin*+
+    0.003862,4,me*sin*+e,0.004049*md,ms-2,me*+sin*+
+    0.003996,2,md,me+*sin*+0.003665,2,me*3,md*-sin*+
+    e,0.002695*2,md*ms-sin*+0.002602,md,2,mf,me+*-sin*+
+    e,0.002396*2,me,md-*ms-sin*+0.002349,md,me+sin*-
+    e2,0.002249*2,me,ms-*sin*+e,0.002125*2,md*ms+sin*-
+    e2,0.002079*2,ms*sin*-e2,0.002059*2,me,ms-*md-sin*+
+    0.001773,md,2,me,mf-*+sin*-0.001595,2,mf,me+*sin*-
+    e,0.00122*4,me*ms-md-sin*+0.00111,2,md,mf+*sin*-
+    0.000892,md,3,me*-sin*+e,0.000811*ms,md+2,me*+sin*-
+    e,0.000761*4,me*ms-2,md*-sin*+
+    e2,0.000704*md,2,ms,me+*-sin*+
+    e,0.000693*ms,2,md,me-*-sin*+
+    e,0.000598*2,me,mf-*ms-sin*+
+    0.00055,md,4,me*+sin*+0.000538,4,md*sin*+
+    e,0.000521*4,me*ms-sin*+0.000486,2,md*me-sin*+
+    e2,0.000717*md,2,ms*-sin*+.l
+  ml,l,dt/+.mm
+  6.283185308 .tp
+  :LT0
+  mm,0.0<?LT1
+    mm,tp+.mm#LT0
+  :LT1
+  tp,mm<?LT1_
+    mm,tp-.mm #LT1
+  :LT1_
+  5.128189,mf,sin*0.280606,md,mf+sin*+
+    0.277693,md,mf-sin*+0.173238,2,me*mf-sin*+
+    0.055413,2,me*mf+md-sin*+0.046272,2,me*mf-md-sin*+
+    0.032573,2,me*mf+sin*+0.017198,2,md*mf+sin*+
+    0.009267,2,me*md+mf-sin*+0.008823,2,md*mf-sin*+
+    e,0.008247*2,me*ms-mf-sin*+0.004323,2,me,md-*mf-sin*+
+    0.0042,2,me*mf+md+sin*+e,0.003372*mf,ms-2,me*-sin*+
+    e,0.002472*2,me*mf+ms-md-sin*+
+    e,0.002222*2,me*mf+ms-sin*+
+    e,0.002072*2,me*mf-ms-md-sin*+
+    e,0.001877*mf,ms-md+sin*+0.001828,4,me*mf-md-sin*+
+    e,0.001803*mf,ms+sin*-0.00175,3,mf*sin*-
+    e,0.00157*md,ms-mf-sin*+0.001487,mf,me+sin*-
+    e,0.001481*mf,ms+md+sin*-e,0.001417*mf,ms-md-sin*+
+    e,0.00135*mf,ms-sin*+0.00133,mf,me-sin*+
+    0.001106,mf,3,md*+sin*+0.00102,4,me*mf-sin*+
+    0.000833,mf,4,me*+md-sin*+0.000781,md,3,mf*-sin*+
+    0.00067,mf,4,me*+2,md*-sin*+0.000606,2,me*3,mf*-sin*+
+    0.000597,2,me,md+*mf-sin*+
+    e,0.000492*2,me*md+ms-mf-sin*+0.00045,2,md,me-*mf-sin*+
+    0.000439,3.0,md*mf-sin*+0.000423,mf,2,me,md+*+sin*+
+    0.000422,2,me*mf-3,md*-sin*+e,0.000367*ms,mf+2,me*+md-sin*-
+    e,0.000353*ms,mf+2,me*+sin*-0.000331,mf,4,me*+sin*+
+    e,0.000317*2,me*mf+ms-md+sin*+
+    e2,0.000306*2,me,ms-*mf-sin*+0.000283,md,3,mf*+sin*-.g
+  0.0004664,na,cos*.w1
+  0.0000754,c,cos*.w2
+  g,dt/1,w1-w2-*.bm
+  0.950724,0.051818,md,cos*+0.009531,2,me*md-cos*+
+    0.007843,2,me*cos*+0.002824,2,md*cos*+
+    0.000857,2,me*md+cos*+e,0.000533*2,me*ms-cos*+
+    e,0.000401*2,me*md-ms-cos*+
+    e,0.00032*md,ms-cos*+0.000271,me,cos*-
+    e,0.000264*ms,md+cos*-0.000198,2,mf*md-cos*-
+    0.000173,3,md*cos*+0.000167,4,me*md-cos*+
+    e,0.000111*ms,cos*-0.000103,4,me*2,md*-cos*+
+    0.000084,2,md*2,me*-cos*-e,0.000083*2,me*ms+cos*-
+    0.000079,2,me*2,md*+cos*+0.000072,4,me*cos*+
+    e,0.000064*2,me*ms-md+cos*+e,0.000063*2,me*ms+md-cos*-
+    e,0.000041*ms,me+cos*+e,0.000035*2,md*ms-cos*+
+    0.000033,3,md*2,me*-cos*-0.00003,md,me+cos*-
+    0.000029,2,mf,me-*cos*-e,0.000029*2,md*ms+cos*-
+    e2,0.000026*2,me,ms-*cos*+0.000023,2,mf,me-*md+cos*-
+    e,0.000019*4,me*ms-md-cos*+
+    dt/.pm
+  6378.14,pm,sin/au/.r
+
+  i,1+.i
+  jd,0+.jd
+  i,1000000<?2 .^
+..
+jd,2415020.0+.jd
+jd~,mm~,bm~,pm~,i~
+##
